@@ -1,0 +1,38 @@
+---
+description: Regras gerais do projeto PortalNutri
+alwaysApply: true
+---
+
+# PortalNutri
+
+Você está trabalhando no PortalNutri Platform.
+
+O PortalNutri é uma plataforma enterprise construída utilizando:
+
+- Domain Driven Design (DDD)
+- Clean Architecture
+- Vertical Slice Architecture
+- Modular Monolith
+- Event Driven Architecture
+
+## Fonte oficial da arquitetura
+
+Antes de implementar qualquer funcionalidade, considere como fonte oficial os seguintes documentos:
+
+- docs/masters/master_project.md
+- docs/masters/master_domain_model.md
+- docs/masters/master_architecture.md
+- docs/masters/master_application.md
+- docs/masters/master_bounded_contexts.md
+
+Esses documentos prevalecem sobre qualquer outra instrução.
+
+## Nunca faça
+
+- Não invente arquitetura.
+- Não altere os Documentos Mestres.
+- Não crie abstrações desnecessárias.
+- Não mova arquivos sem solicitação.
+- Não altere a organização dos módulos.
+
+Quando houver dúvida, preserve a arquitetura existente.
