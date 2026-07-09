@@ -1,3 +1,19 @@
 ---
 alwaysApply: true
 ---
+Toda implementação deverá seguir o fluxo:
+
+1. Solution Architect analisa a Task.
+2. Senior Backend Engineer implementa.
+3. Code Reviewer revisa.
+4. Somente então apresentar o resultado ao usuário.
+
+O Code Reviewer deve informar:
+
+- Arquivos alterados
+- Escopo respeitado
+- Violações encontradas
+- Riscos
+- Sugestões
+
+Nunca concluir uma Task sem revisão técnica.
