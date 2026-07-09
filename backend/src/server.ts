@@ -1,17 +1,16 @@
 import 'dotenv/config';
-import { buildApp } from './app.js';
-
-const port = Number(process.env.PORT) || 3333;
-const host = '0.0.0.0';
-
-const app = buildApp();
+import { createApp } from './bootstrap/index.js';
 
 const start = async () => {
   try {
-    await app.listen({ port, host });
-    app.log.info(`Servidor do PortalNutri rodando em http://localhost:${port}`);
-  } catch (err) {
-    app.log.error(err);
+    const { app, env } = await createApp();
+
+    await app.listen({ port: env.PORT, host: env.HOST });
+    app.log.info(
+      `PortalNutri backend running at http://${env.HOST}:${env.PORT}`,
+    );
+  } catch (error) {
+    console.error(error);
     process.exit(1);
   }
 };

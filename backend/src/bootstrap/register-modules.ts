@@ -1,0 +1,16 @@
+import type { FastifyInstance } from 'fastify';
+import { registerHealthRoute } from './routes/health.js';
+
+export async function registerModules(app: FastifyInstance): Promise<void> {
+  await app.register(
+    async (api) => {
+      await registerHealthRoute(api);
+
+      // Bounded context routes will be registered here in future tasks.
+      // Example:
+      // await api.register(iamRoutes, { prefix: '/iam' });
+      // await api.register(careRoutes, { prefix: '/care' });
+    },
+    { prefix: '/api' },
+  );
+}

@@ -1,32 +1,6 @@
-import fastify from 'fastify';
-import cors from '@fastify/cors';
+import { createApp } from './bootstrap/index.js';
 
-export function buildApp() {
-  const app = fastify({
-    logger: {
-      transport: {
-        target: 'pino-pretty',
-        options: {
-          translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname',
-        },
-      },
-    },
-  });
-
-  // Registo do CORS
-  app.register(cors, {
-    origin: '*', // Ajustar em produção
-  });
-
-  // Rota de Health Check
-  app.get('/health', async (request, reply) => {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    };
-  });
-
+export async function buildApp() {
+  const { app } = await createApp();
   return app;
 }
