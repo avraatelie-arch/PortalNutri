@@ -27,9 +27,8 @@ export interface CreatePersonProps {
 
 export interface UpdatePersonProps {
   fullName?: FullName;
+  preferredName?: PreferredName | null;
   email?: Email;
-  document?: Document;
-  birthDate?: BirthDate;
   phone?: Phone | null;
 }
 
@@ -124,14 +123,12 @@ export class Person extends AggregateRoot {
       changedFields.push('email');
     }
 
-    if (props.document && !props.document.equals(this.document)) {
-      this.document = props.document;
-      changedFields.push('document');
-    }
-
-    if (props.birthDate && !props.birthDate.equals(this.birthDate)) {
-      this.birthDate = props.birthDate;
-      changedFields.push('birthDate');
+    if (
+      props.preferredName !== undefined &&
+      !this.hasSamePreferredName(props.preferredName)
+    ) {
+      this.preferredName = props.preferredName;
+      changedFields.push('preferredName');
     }
 
     if (props.phone !== undefined && !this.hasSamePhone(props.phone)) {
@@ -215,6 +212,18 @@ export class Person extends AggregateRoot {
     if (!this.isActive()) {
       throw new DomainError('Inactive persons cannot be updated.');
     }
+  }
+
+  private hasSamePreferredName(preferredName: PreferredName | null): boolean {
+    if (this.preferredName === null && preferredName === null) {
+      return true;
+    }
+
+    if (this.preferredName === null || preferredName === null) {
+      return false;
+    }
+
+    return this.preferredName.equals(preferredName);
   }
 
   private hasSamePhone(phone: Phone | null): boolean {

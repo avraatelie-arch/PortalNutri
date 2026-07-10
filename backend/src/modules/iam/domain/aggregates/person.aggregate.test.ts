@@ -127,6 +127,37 @@ describe('Person aggregate', () => {
     );
   });
 
+  it('updates preferred name', () => {
+    const person = Person.create(createValidPersonProps());
+    person.clearDomainEvents();
+
+    person.update({
+      preferredName: PreferredName.create('Mari'),
+    });
+
+    assert.equal(person.getPreferredName()?.toString(), 'Mari');
+    assert.deepEqual(
+      (person.domainEvents[0] as PersonUpdated).changedFields,
+      ['preferredName'],
+    );
+  });
+
+  it('clears preferred name when set to null', () => {
+    const person = Person.create({
+      ...createValidPersonProps(),
+      preferredName: PreferredName.create('Mari'),
+    });
+    person.clearDomainEvents();
+
+    person.update({ preferredName: null });
+
+    assert.equal(person.getPreferredName(), null);
+    assert.deepEqual(
+      (person.domainEvents[0] as PersonUpdated).changedFields,
+      ['preferredName'],
+    );
+  });
+
   it('does not allow updating an inactive person', () => {
     const person = Person.create(createValidPersonProps());
     person.deactivate();
