@@ -12,6 +12,7 @@ export class PersonCreated implements DomainEvent {
     readonly email: string,
     readonly documentType: DocumentType,
     readonly documentValue: string,
+    readonly preferredName: string | null = null,
     occurredAt: Date = new Date(),
   ) {
     this.aggregateId = aggregateId;

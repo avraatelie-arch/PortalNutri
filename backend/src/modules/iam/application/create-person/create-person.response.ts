@@ -13,6 +13,7 @@ export class CreatePersonResponse {
   private constructor(
     readonly personId: string,
     readonly fullName: string,
+    readonly preferredName: string | null,
     readonly email: string,
     readonly documentType: DocumentType,
     readonly documentValue: string,
@@ -25,10 +26,12 @@ export class CreatePersonResponse {
 
   static from(person: Person, events: DomainEvent[]): CreatePersonResponse {
     const phone = person.getPhone();
+    const preferredName = person.getPreferredName();
 
     return new CreatePersonResponse(
       person.getId().toString(),
       person.getFullName().toString(),
+      preferredName ? preferredName.toString() : null,
       person.getEmail().toString(),
       person.getDocument().getType(),
       person.getDocument().getValue(),

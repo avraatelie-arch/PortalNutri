@@ -5,6 +5,7 @@ import { BirthDate } from './birth-date.js';
 import { Document, DocumentType } from './document.js';
 import { Email } from './email.js';
 import { FullName } from './full-name.js';
+import { PreferredName } from './preferred-name.js';
 
 describe('FullName', () => {
   it('rejects empty full name', () => {
@@ -52,6 +53,26 @@ describe('Document', () => {
 
     assert.equal(document.getType(), DocumentType.PASSPORT);
     assert.equal(document.getValue(), 'AB123456');
+  });
+});
+
+describe('PreferredName', () => {
+  it('returns null when optional value is absent', () => {
+    assert.equal(PreferredName.createOptional(null), null);
+    assert.equal(PreferredName.createOptional(undefined), null);
+    assert.equal(PreferredName.createOptional('   '), null);
+  });
+
+  it('rejects empty preferred name when provided', () => {
+    assert.throws(() => PreferredName.create(''), DomainError);
+    assert.throws(() => PreferredName.create('   '), DomainError);
+  });
+
+  it('trims external spaces and accepts a valid preferred name', () => {
+    const preferredName = PreferredName.createOptional('  Maria  ');
+
+    assert.ok(preferredName);
+    assert.equal(preferredName.toString(), 'Maria');
   });
 });
 

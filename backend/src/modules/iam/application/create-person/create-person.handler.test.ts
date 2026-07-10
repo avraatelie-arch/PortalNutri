@@ -39,8 +39,19 @@ describe('CreatePersonHandler', () => {
     assert.equal(response.documentValue, 'AB123456');
     assert.equal(response.birthDate, '1990-06-15');
     assert.equal(response.phone, '+5511999999999');
+    assert.equal(response.preferredName, null);
     assert.equal(response.status, PersonStatus.Active);
     assert.match(response.personId, /^[0-9a-f-]{36}$/i);
+  });
+
+  it('creates a person with preferred name', async () => {
+    const handler = createHandler();
+
+    const response = await handler.execute(
+      createValidCommand({ preferredName: '  Mari  ' }),
+    );
+
+    assert.equal(response.preferredName, 'Mari');
   });
 
   it('publishes PersonCreated event in response', async () => {

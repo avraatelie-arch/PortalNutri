@@ -13,10 +13,12 @@ import { FullName } from '../value-objects/full-name.js';
 import { PersonId } from '../value-objects/person-id.js';
 import { PersonStatus } from '../value-objects/person-status.js';
 import { Phone } from '../value-objects/phone.js';
+import { PreferredName } from '../value-objects/preferred-name.js';
 
 export interface CreatePersonProps {
   id?: PersonId;
   fullName: FullName;
+  preferredName?: PreferredName | null;
   email: Email;
   document: Document;
   birthDate: BirthDate;
@@ -34,6 +36,7 @@ export interface UpdatePersonProps {
 export interface ReconstitutePersonProps {
   id: PersonId;
   fullName: FullName;
+  preferredName: PreferredName | null;
   email: Email;
   document: Document;
   birthDate: BirthDate;
@@ -47,6 +50,7 @@ export class Person extends AggregateRoot {
   private constructor(
     private readonly id: PersonId,
     private fullName: FullName,
+    private preferredName: PreferredName | null,
     private email: Email,
     private document: Document,
     private birthDate: BirthDate,
@@ -61,10 +65,12 @@ export class Person extends AggregateRoot {
   static create(props: CreatePersonProps): Person {
     const id = props.id ?? PersonId.generate();
     const now = new Date();
+    const preferredName = props.preferredName ?? null;
 
     const person = new Person(
       id,
       props.fullName,
+      preferredName,
       props.email,
       props.document,
       props.birthDate,
@@ -81,6 +87,7 @@ export class Person extends AggregateRoot {
         props.email.toString(),
         props.document.getType(),
         props.document.getValue(),
+        preferredName?.toString() ?? null,
       ),
     );
 
@@ -91,6 +98,7 @@ export class Person extends AggregateRoot {
     return new Person(
       props.id,
       props.fullName,
+      props.preferredName,
       props.email,
       props.document,
       props.birthDate,
@@ -165,6 +173,10 @@ export class Person extends AggregateRoot {
 
   getFullName(): FullName {
     return this.fullName;
+  }
+
+  getPreferredName(): PreferredName | null {
+    return this.preferredName;
   }
 
   getEmail(): Email {

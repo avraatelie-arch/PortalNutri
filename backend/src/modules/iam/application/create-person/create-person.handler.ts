@@ -5,6 +5,7 @@ import { Email } from '../../domain/value-objects/email.js';
 import { FullName } from '../../domain/value-objects/full-name.js';
 import { Person } from '../../domain/aggregates/person.aggregate.js';
 import { Phone } from '../../domain/value-objects/phone.js';
+import { PreferredName } from '../../domain/value-objects/preferred-name.js';
 import { ApplicationError } from '../errors/application-error.js';
 import { CreatePersonCommand } from './create-person.command.js';
 import { CreatePersonResponse } from './create-person.response.js';
@@ -13,10 +14,11 @@ export class CreatePersonHandler {
   constructor(private readonly personRepository: PersonRepository) {}
 
   async execute(command: CreatePersonCommand): Promise<CreatePersonResponse> {
-    const { fullName, email, documentType, documentValue, birthDate, phone } =
+    const { fullName, preferredName, email, documentType, documentValue, birthDate, phone } =
       command.request;
 
     const fullNameVo = FullName.create(fullName);
+    const preferredNameVo = PreferredName.createOptional(preferredName);
     const emailVo = Email.create(email);
     const documentVo = Document.create(documentType, documentValue);
     const birthDateVo = BirthDate.create(parseBirthDate(birthDate));
@@ -32,6 +34,7 @@ export class CreatePersonHandler {
 
     const person = Person.create({
       fullName: fullNameVo,
+      preferredName: preferredNameVo,
       email: emailVo,
       document: documentVo,
       birthDate: birthDateVo,

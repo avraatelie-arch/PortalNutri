@@ -13,6 +13,7 @@ import { Email } from '../value-objects/email.js';
 import { FullName } from '../value-objects/full-name.js';
 import { PersonId } from '../value-objects/person-id.js';
 import { PersonStatus } from '../value-objects/person-status.js';
+import { PreferredName } from '../value-objects/preferred-name.js';
 import { Person } from './person.aggregate.js';
 
 const PERSON_ID = PersonId.create('550e8400-e29b-41d4-a716-446655440000');
@@ -36,6 +37,33 @@ describe('Person aggregate', () => {
     assert.equal(person.getEmail().toString(), 'maria.silva@example.com');
     assert.equal(person.getDocument().getValue(), 'AB123456');
     assert.equal(person.getBirthDate().toString(), '1990-06-15');
+    assert.equal(person.getPreferredName(), null);
+  });
+
+  it('creates a person with preferred name', () => {
+    const person = Person.create({
+      ...createValidPersonProps(),
+      preferredName: PreferredName.create('Mari'),
+    });
+
+    assert.equal(person.getPreferredName()?.toString(), 'Mari');
+  });
+
+  it('includes preferred name in PersonCreated when informed', () => {
+    const person = Person.create({
+      ...createValidPersonProps(),
+      preferredName: PreferredName.create('Mari'),
+    });
+    const event = person.domainEvents[0] as PersonCreated;
+
+    assert.equal(event.preferredName, 'Mari');
+  });
+
+  it('sets null preferred name in PersonCreated when absent', () => {
+    const person = Person.create(createValidPersonProps());
+    const event = person.domainEvents[0] as PersonCreated;
+
+    assert.equal(event.preferredName, null);
   });
 
   it('starts with Active status', () => {

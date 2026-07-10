@@ -21,3 +21,4 @@ export { FullName } from './value-objects/full-name.js';
 export { PersonId } from './value-objects/person-id.js';
 export { PersonStatus } from './value-objects/person-status.js';
 export { Phone } from './value-objects/phone.js';
+export { PreferredName } from './value-objects/preferred-name.js';
