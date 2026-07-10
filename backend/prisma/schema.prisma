@@ -7,28 +7,43 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Person {
-  id           String        @id @default(uuid())
-  email        String        @unique
-  passwordHash String        @map("password_hash")
-  name         String
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  roles        Role[]
-  associations Association[]
+enum PersonStatus {
+  ACTIVE
+  INACTIVE
+}
 
+enum DocumentType {
+  CPF
+  RG
+  CNH
+  PASSPORT
+  OTHER
+}
+
+model Person {
+  id            String       @id @default(uuid())
+  fullName      String       @map("full_name")
+  preferredName String?      @map("preferred_name")
+  email         String       @unique
+  phone         String?
+  document      String
+  documentType  DocumentType @map("document_type")
+  birthDate     DateTime     @map("birth_date") @db.Date
+  status        PersonStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@unique([documentType, document])
   @@map("persons")
 }
 
 model Role {
   id        String   @id @default(uuid())
   personId  String   @map("person_id")
-  name      String   // e.g. "PACIENTE", "NUTRICIONISTA", "SECRETARIA", "ADMINISTRADOR"
-  scope     String?  // Optional scope limitation
+  name      String
+  scope     String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   @@map("roles")
 }
@@ -48,11 +63,10 @@ model Association {
   id        String   @id @default(uuid())
   personId  String   @map("person_id")
   tenantId  String   @map("tenant_id")
-  type      String   // e.g. "OWNER", "EMPLOYEE", "PATIENT"
+  type      String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([personId, tenantId])
