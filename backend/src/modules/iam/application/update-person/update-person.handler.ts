@@ -5,7 +5,7 @@ import { FullName } from '../../domain/value-objects/full-name.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
 import { Phone } from '../../domain/value-objects/phone.js';
 import { PreferredName } from '../../domain/value-objects/preferred-name.js';
-import { ApplicationError } from '../errors/application-error.js';
+import { PersonEmailAlreadyExistsError } from '../errors/person-email-already-exists.error.js';
 import { PersonNotFoundError } from '../errors/person-not-found.error.js';
 import { UpdatePersonCommand } from './update-person.command.js';
 import { toUpdatePersonResult } from './update-person.result.js';
@@ -38,7 +38,7 @@ export class UpdatePersonHandler {
       const existingByEmail = await this.personRepository.findByEmail(emailVo);
 
       if (existingByEmail && !existingByEmail.getId().equals(person.getId())) {
-        throw new ApplicationError('Email is already registered.');
+        throw new PersonEmailAlreadyExistsError(emailVo.toString());
       }
 
       updateProps.email = emailVo;

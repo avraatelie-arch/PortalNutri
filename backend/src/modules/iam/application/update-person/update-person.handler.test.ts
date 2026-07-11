@@ -5,7 +5,7 @@ import { DocumentType } from '../../domain/value-objects/document.js';
 import { PersonStatus } from '../../domain/value-objects/person-status.js';
 import { CreatePersonCommand } from '../create-person/create-person.command.js';
 import { CreatePersonHandler } from '../create-person/create-person.handler.js';
-import { ApplicationError } from '../errors/application-error.js';
+import { PersonEmailAlreadyExistsError } from '../errors/person-email-already-exists.error.js';
 import { PersonNotFoundError } from '../errors/person-not-found.error.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
 import { InMemoryPersonRepository } from '../../infrastructure/repositories/in-memory-person.repository.js';
@@ -192,7 +192,7 @@ describe('UpdatePersonHandler', () => {
             email: 'maria.silva@example.com',
           }),
         ),
-      ApplicationError,
+      PersonEmailAlreadyExistsError,
     );
 
     const unchanged = await repository.findById(PersonId.create(first.personId));

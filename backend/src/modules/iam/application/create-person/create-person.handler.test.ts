@@ -3,7 +3,8 @@ import { describe, it } from 'node:test';
 import { DomainError } from '../../domain/errors/domain-error.js';
 import { DocumentType } from '../../domain/value-objects/document.js';
 import { PersonStatus } from '../../domain/value-objects/person-status.js';
-import { ApplicationError } from '../errors/application-error.js';
+import { PersonDocumentAlreadyExistsError } from '../errors/person-document-already-exists.error.js';
+import { PersonEmailAlreadyExistsError } from '../errors/person-email-already-exists.error.js';
 import { CreatePersonCommand } from './create-person.command.js';
 import { CreatePersonHandler } from './create-person.handler.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
@@ -88,7 +89,7 @@ describe('CreatePersonHandler', () => {
             documentValue: 'CD987654',
           }),
         ),
-      ApplicationError,
+      PersonEmailAlreadyExistsError,
     );
   });
 
@@ -105,7 +106,7 @@ describe('CreatePersonHandler', () => {
             documentValue: 'AB123456',
           }),
         ),
-      ApplicationError,
+      PersonDocumentAlreadyExistsError,
     );
   });
 
@@ -133,7 +134,7 @@ describe('CreatePersonHandler', () => {
             birthDate: '15-06-1990',
           }),
         ),
-      ApplicationError,
+      DomainError,
     );
   });
 });

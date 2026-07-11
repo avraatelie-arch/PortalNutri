@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { disconnectPrismaClient } from '../core/database/prisma-client.js';
 
 const SHUTDOWN_SIGNALS = ['SIGINT', 'SIGTERM'] as const;
 
@@ -18,6 +19,7 @@ export function registerShutdownHooks(app: FastifyInstance): void {
   }
 
   app.addHook('onClose', async () => {
+    await disconnectPrismaClient();
     app.log.info('Application shutdown completed.');
   });
 }
