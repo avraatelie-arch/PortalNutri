@@ -1,4 +1,5 @@
 import type { Env } from './env.js';
+import { APP_NAME, APP_VERSION } from './app-metadata.js';
 
 export function buildOpenApiConfig(env: Env) {
   const host = env.HOST === '0.0.0.0' ? 'localhost' : env.HOST;
@@ -6,9 +7,9 @@ export function buildOpenApiConfig(env: Env) {
   return {
     openapi: '3.0.0',
     info: {
-      title: 'PortalNutri API',
-      description: 'PortalNutri Platform HTTP API',
-      version: '1.0.0',
+      title: `${APP_NAME} API`,
+      description: `${APP_NAME} Platform HTTP API`,
+      version: APP_VERSION,
     },
     servers: [
       {

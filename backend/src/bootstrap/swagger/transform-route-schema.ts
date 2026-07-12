@@ -23,7 +23,12 @@ function toJsonSchema(schema: unknown): unknown {
 }
 
 function isHealthRoute(url: string): boolean {
-  return url === '/api/health' || url.endsWith('/health');
+  return (
+    url === '/health' ||
+    url === '/health/live' ||
+    url === '/health/ready' ||
+    url === '/api/health'
+  );
 }
 
 function isIamRoute(url: string): boolean {

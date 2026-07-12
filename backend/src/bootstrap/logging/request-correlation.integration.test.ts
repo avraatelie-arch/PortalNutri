@@ -26,7 +26,7 @@ describe('Request correlation (integration)', () => {
   it('generates a UUID request ID when the header is absent', async () => {
     const response = await app.inject({
       method: 'GET',
-      url: '/api/health',
+      url: '/health',
     });
 
     assert.equal(response.statusCode, 200);
@@ -42,7 +42,7 @@ describe('Request correlation (integration)', () => {
 
     const response = await app.inject({
       method: 'GET',
-      url: '/api/health',
+      url: '/health',
       headers: {
         'x-request-id': incomingRequestId,
       },
@@ -55,7 +55,7 @@ describe('Request correlation (integration)', () => {
   it('generates a UUID when x-request-id is empty', async () => {
     const response = await app.inject({
       method: 'GET',
-      url: '/api/health',
+      url: '/health',
       headers: {
         'x-request-id': '',
       },
@@ -68,7 +68,7 @@ describe('Request correlation (integration)', () => {
   it('returns x-request-id on every response', async () => {
     const response = await app.inject({
       method: 'GET',
-      url: '/api/health',
+      url: '/health',
     });
 
     assert.equal(response.statusCode, 200);
@@ -78,7 +78,7 @@ describe('Request correlation (integration)', () => {
   it('exposes x-request-id through CORS', async () => {
     const response = await app.inject({
       method: 'GET',
-      url: '/api/health',
+      url: '/health',
       headers: {
         origin: 'http://localhost:3000',
       },
