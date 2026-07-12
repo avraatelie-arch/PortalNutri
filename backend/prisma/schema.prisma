@@ -32,9 +32,29 @@ model Person {
   status        PersonStatus @default(ACTIVE)
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime     @updatedAt @map("updated_at")
+  credential    Credential?
 
   @@unique([documentType, document])
   @@map("persons")
+}
+
+enum CredentialStatus {
+  ACTIVE
+  LOCKED
+  DISABLED
+  EXPIRED
+}
+
+model Credential {
+  id           String           @id @default(uuid())
+  personId     String           @unique @map("person_id")
+  passwordHash String           @map("password_hash")
+  status       CredentialStatus @default(ACTIVE)
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  person       Person           @relation(fields: [personId], references: [id], onDelete: Restrict)
+
+  @@map("credentials")
 }
 
 model Role {

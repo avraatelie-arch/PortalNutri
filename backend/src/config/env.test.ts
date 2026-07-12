@@ -40,6 +40,9 @@ describe('parseEnv', () => {
     assert.equal(env.DATABASE_URL, VALID_DATABASE_URL);
     assert.equal(env.CORS_ORIGIN, '*');
     assert.equal(env.corsOrigins, '*');
+    assert.equal(env.ARGON2_TIME_COST, 3);
+    assert.equal(env.ARGON2_MEMORY_COST, 65536);
+    assert.equal(env.ARGON2_PARALLELISM, 4);
     assert.equal(env.LOG_LEVEL, 'info');
     assert.equal(env.LOG_PRETTY, true);
     assert.equal(env.OPENAPI_ENABLED, true);

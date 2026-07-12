@@ -43,7 +43,9 @@ export async function createPersonHttpTestApp(): Promise<FastifyInstance> {
 }
 
 export async function resetPersons(): Promise<void> {
-  await getPrismaClient().person.deleteMany();
+  const prisma = getPrismaClient();
+  await prisma.credential.deleteMany();
+  await prisma.person.deleteMany();
 }
 
 export function nextFixtureSuffix(): string {

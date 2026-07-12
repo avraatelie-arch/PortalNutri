@@ -15,7 +15,7 @@ export async function createApp() {
   });
 
   await registerPlugins(app, env);
-  await registerRoutes(app);
+  await registerRoutes(app, env);
   registerShutdownHooks(app);
 
   return { app, env };

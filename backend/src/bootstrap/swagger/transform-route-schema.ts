@@ -32,7 +32,7 @@ function isHealthRoute(url: string): boolean {
 }
 
 function isIamRoute(url: string): boolean {
-  return url.startsWith('/api/iam');
+  return url.startsWith('/api/iam') || url.startsWith('/api/auth');
 }
 
 export function transformRouteSchema({

@@ -97,6 +97,21 @@ const envSchema = z
 
         return undefined;
       }),
+    ARGON2_TIME_COST: z.coerce
+      .number()
+      .int('ARGON2_TIME_COST must be a positive integer')
+      .min(1, 'ARGON2_TIME_COST must be a positive integer')
+      .default(3),
+    ARGON2_MEMORY_COST: z.coerce
+      .number()
+      .int('ARGON2_MEMORY_COST must be a positive integer')
+      .min(1, 'ARGON2_MEMORY_COST must be a positive integer')
+      .default(65536),
+    ARGON2_PARALLELISM: z.coerce
+      .number()
+      .int('ARGON2_PARALLELISM must be a positive integer')
+      .min(1, 'ARGON2_PARALLELISM must be a positive integer')
+      .default(4),
   })
   .superRefine((data, ctx) => {
     if (data.CORS_ORIGIN === '*') {
