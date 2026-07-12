@@ -65,6 +65,20 @@ describe('Request correlation (integration)', () => {
     assert.match(response.headers['x-request-id'] ?? '', UUID_PATTERN);
   });
 
+  it('generates a UUID when x-request-id is longer than 128 characters', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/health',
+      headers: {
+        'x-request-id': 'a'.repeat(129),
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.match(response.headers['x-request-id'] ?? '', UUID_PATTERN);
+    assert.notEqual(response.headers['x-request-id'], 'a'.repeat(129));
+  });
+
   it('returns x-request-id on every response', async () => {
     const response = await app.inject({
       method: 'GET',

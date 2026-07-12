@@ -23,7 +23,7 @@ async function seedPerson(
       fullName: 'Maria Silva',
       email: 'maria.silva@example.com',
       documentType: DocumentType.PASSPORT,
-      documentValue: 'AB123456',
+      document: 'AB123456',
       birthDate: '1990-06-15',
       phone: '+5511999999999',
       ...overrides,
@@ -39,10 +39,10 @@ describe('FindPersonByIdHandler', () => {
     const handler = new FindPersonByIdHandler(repository);
 
     const result = await handler.execute(
-      new FindPersonByIdQuery(created.personId),
+      new FindPersonByIdQuery(created.id),
     );
 
-    assert.equal(result.id, created.personId);
+    assert.equal(result.id, created.id);
   });
 
   it('returns all expected data in the result', async () => {
@@ -52,10 +52,10 @@ describe('FindPersonByIdHandler', () => {
     const handler = new FindPersonByIdHandler(repository);
 
     const result = await handler.execute(
-      new FindPersonByIdQuery(created.personId),
+      new FindPersonByIdQuery(created.id),
     );
 
-    assert.equal(result.id, created.personId);
+    assert.equal(result.id, created.id);
     assert.equal(result.fullName, 'Maria Silva');
     assert.equal(result.preferredName, 'Mari');
     assert.equal(result.email, 'maria.silva@example.com');
@@ -73,7 +73,7 @@ describe('FindPersonByIdHandler', () => {
     const handler = new FindPersonByIdHandler(repository);
 
     const result = await handler.execute(
-      new FindPersonByIdQuery(created.personId),
+      new FindPersonByIdQuery(created.id),
     );
 
     assert.equal(result.preferredName, null);
@@ -97,12 +97,12 @@ describe('FindPersonByIdHandler', () => {
     const { repository, created } = await seedPerson();
     const handler = new FindPersonByIdHandler(repository);
     const personBefore = await repository.findById(
-      PersonId.create(created.personId),
+      PersonId.create(created.id),
     );
 
     assert.ok(personBefore);
 
-    await handler.execute(new FindPersonByIdQuery(created.personId));
+    await handler.execute(new FindPersonByIdQuery(created.id));
 
     const personAfter = await repository.findById(personBefore.getId());
 
@@ -129,12 +129,12 @@ describe('FindPersonByIdHandler', () => {
   it('does not publish domain events', async () => {
     const { repository, created } = await seedPerson();
     const handler = new FindPersonByIdHandler(repository);
-    const person = await repository.findById(PersonId.create(created.personId));
+    const person = await repository.findById(PersonId.create(created.id));
 
     assert.ok(person);
     assert.equal(person.domainEvents.length, 0);
 
-    await handler.execute(new FindPersonByIdQuery(created.personId));
+    await handler.execute(new FindPersonByIdQuery(created.id));
 
     assert.equal(person.domainEvents.length, 0);
   });

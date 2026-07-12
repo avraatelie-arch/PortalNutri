@@ -42,13 +42,13 @@ describe('PrismaPersonRepository (integration)', () => {
         fullName: 'Maria Silva',
         email: 'maria.silva@example.com',
         documentType: DocumentType.PASSPORT,
-        documentValue: 'AB123456',
+        document: 'AB123456',
         birthDate: '1990-06-15',
         phone: '+5511999999999',
       }),
     );
 
-    const found = await repository.findById(PersonId.create(created.personId));
+    const found = await repository.findById(PersonId.create(created.id));
 
     assert.ok(found);
     assert.equal(found.getFullName().toString(), 'Maria Silva');
@@ -67,7 +67,7 @@ describe('PrismaPersonRepository (integration)', () => {
         fullName: 'João Santos',
         email: 'joao.santos@example.com',
         documentType: DocumentType.PASSPORT,
-        documentValue: 'CD987654',
+        document: 'CD987654',
         birthDate: '1985-03-20',
       }),
     );
@@ -77,7 +77,7 @@ describe('PrismaPersonRepository (integration)', () => {
     );
 
     assert.ok(found);
-    assert.equal(found.getId().toString(), created.personId);
+    assert.equal(found.getId().toString(), created.id);
   });
 
   it('finds a person by document', async () => {
@@ -88,7 +88,7 @@ describe('PrismaPersonRepository (integration)', () => {
         fullName: 'Ana Costa',
         email: 'ana.costa@example.com',
         documentType: DocumentType.RG,
-        documentValue: 'MG1234567',
+        document: 'MG1234567',
         birthDate: '1992-11-03',
       }),
     );
@@ -98,7 +98,7 @@ describe('PrismaPersonRepository (integration)', () => {
     );
 
     assert.ok(found);
-    assert.equal(found.getId().toString(), created.personId);
+    assert.equal(found.getId().toString(), created.id);
   });
 
   it('reports existence by email and document', async () => {
@@ -109,7 +109,7 @@ describe('PrismaPersonRepository (integration)', () => {
         fullName: 'Carla Dias',
         email: 'carla.dias@example.com',
         documentType: DocumentType.CNH,
-        documentValue: 'CNH998877',
+        document: 'CNH998877',
         birthDate: '1988-01-10',
       }),
     );
@@ -146,7 +146,7 @@ describe('PrismaPersonRepository (integration)', () => {
         preferredName: 'Pedro',
         email: 'pedro.lima@example.com',
         documentType: DocumentType.OTHER,
-        documentValue: 'DOC12345',
+        document: 'DOC12345',
         birthDate: '1995-07-22',
         phone: '+5511777777777',
       }),
@@ -154,7 +154,7 @@ describe('PrismaPersonRepository (integration)', () => {
 
     await updateHandler.execute(
       new UpdatePersonCommand({
-        personId: created.personId,
+        personId: created.id,
         fullName: 'Pedro Lima Souza',
         preferredName: null,
         email: 'pedro.souza@example.com',
@@ -162,7 +162,7 @@ describe('PrismaPersonRepository (integration)', () => {
       }),
     );
 
-    const found = await repository.findById(PersonId.create(created.personId));
+    const found = await repository.findById(PersonId.create(created.id));
 
     assert.ok(found);
     assert.equal(found.getFullName().toString(), 'Pedro Lima Souza');
@@ -182,16 +182,16 @@ describe('PrismaPersonRepository (integration)', () => {
         fullName: 'Lucia Ferreira',
         email: 'lucia.ferreira@example.com',
         documentType: DocumentType.PASSPORT,
-        documentValue: 'EF445566',
+        document: 'EF445566',
         birthDate: '1979-12-01',
       }),
     );
 
     await deactivateHandler.execute(
-      new DeactivatePersonCommand(created.personId),
+      new DeactivatePersonCommand(created.id),
     );
 
-    const found = await repository.findById(PersonId.create(created.personId));
+    const found = await repository.findById(PersonId.create(created.id));
 
     assert.ok(found);
     assert.equal(found.getStatus(), PersonStatus.Inactive);

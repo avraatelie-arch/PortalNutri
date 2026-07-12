@@ -15,6 +15,15 @@ function isPostgresDatabaseUrl(value: string): boolean {
   }
 }
 
+function parseCorsOrigins(corsOrigin: string): string | string[] {
+  const origins = corsOrigin
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+
+  return origins.length === 1 ? origins[0]! : origins;
+}
+
 function formatEnvValidationError(error: z.ZodError): string {
   const issues = error.issues.map((issue) => {
     const path = issue.path.length > 0 ? issue.path.join('.') : 'environment';
@@ -89,12 +98,44 @@ const envSchema = z
         return undefined;
       }),
   })
-  .transform((data) => ({
-    ...data,
-    OPENAPI_ENABLED:
-      data.OPENAPI_ENABLED ?? data.NODE_ENV !== 'production',
-    LOG_PRETTY: data.LOG_PRETTY ?? data.NODE_ENV === 'development',
-  }));
+  .superRefine((data, ctx) => {
+    if (data.CORS_ORIGIN === '*') {
+      if (data.NODE_ENV === 'production') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['CORS_ORIGIN'],
+          message: 'CORS_ORIGIN cannot be "*" in production',
+        });
+      }
+
+      return;
+    }
+
+    const origins = data.CORS_ORIGIN
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0);
+
+    if (origins.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['CORS_ORIGIN'],
+        message: 'CORS_ORIGIN must contain at least one non-empty origin',
+      });
+    }
+  })
+  .transform((data) => {
+    const corsOrigins =
+      data.CORS_ORIGIN === '*' ? '*' : parseCorsOrigins(data.CORS_ORIGIN);
+
+    return {
+      ...data,
+      OPENAPI_ENABLED:
+        data.OPENAPI_ENABLED ?? data.NODE_ENV !== 'production',
+      LOG_PRETTY: data.LOG_PRETTY ?? data.NODE_ENV === 'development',
+      corsOrigins,
+    };
+  });
 
 export type Env = z.infer<typeof envSchema>;
 

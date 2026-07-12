@@ -1,13 +1,15 @@
-import { DomainError } from '../../domain/errors/domain-error.js';
 import { PersonDocumentAlreadyExistsError } from '../../application/errors/person-document-already-exists.error.js';
 import { PersonEmailAlreadyExistsError } from '../../application/errors/person-email-already-exists.error.js';
 import { PersonNotFoundError } from '../../application/errors/person-not-found.error.js';
+import { PersonValidationError } from '../../application/errors/person-validation.error.js';
 
 export interface HttpErrorResponse {
   statusCode: number;
   error: string;
   message: string;
 }
+
+export const GENERIC_INTERNAL_ERROR_MESSAGE = 'An unexpected error occurred.';
 
 export function mapApplicationErrorToHttp(error: unknown): HttpErrorResponse {
   if (error instanceof PersonNotFoundError) {
@@ -34,7 +36,7 @@ export function mapApplicationErrorToHttp(error: unknown): HttpErrorResponse {
     };
   }
 
-  if (error instanceof DomainError) {
+  if (error instanceof PersonValidationError) {
     return {
       statusCode: 400,
       error: 'Bad Request',
@@ -45,6 +47,6 @@ export function mapApplicationErrorToHttp(error: unknown): HttpErrorResponse {
   return {
     statusCode: 500,
     error: 'Internal Server Error',
-    message: 'An unexpected error occurred.',
+    message: GENERIC_INTERNAL_ERROR_MESSAGE,
   };
 }

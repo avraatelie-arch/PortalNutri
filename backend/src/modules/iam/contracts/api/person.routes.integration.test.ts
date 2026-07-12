@@ -43,9 +43,9 @@ describe('Person HTTP routes (integration)', () => {
 
       assert.equal(response.statusCode, 201);
 
-      const body = response.body as { personId?: string; email?: string };
+      const body = response.body as { id?: string; email?: string };
 
-      assert.match(body.personId ?? '', /^[0-9a-f-]{36}$/i);
+      assert.match(body.id ?? '', /^[0-9a-f-]{36}$/i);
       assert.equal(body.email, payload.email);
     });
 
@@ -88,7 +88,7 @@ describe('Person HTTP routes (integration)', () => {
         url: '/api/iam/persons',
         payload: {
           ...validCreatePersonPayload(),
-          documentValue: payload.documentValue,
+          document: payload.document,
         },
       });
 
@@ -261,7 +261,7 @@ describe('Person HTTP routes (integration)', () => {
       };
 
       assert.equal(body.status, 'INACTIVE');
-      assert.deepEqual(body.events, []);
+      assert.equal(body.events, undefined);
     });
 
     it('returns 404 when person is not found', async () => {

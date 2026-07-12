@@ -39,6 +39,7 @@ describe('parseEnv', () => {
     assert.equal(env.HOST, '0.0.0.0');
     assert.equal(env.DATABASE_URL, VALID_DATABASE_URL);
     assert.equal(env.CORS_ORIGIN, '*');
+    assert.equal(env.corsOrigins, '*');
     assert.equal(env.LOG_LEVEL, 'info');
     assert.equal(env.LOG_PRETTY, true);
     assert.equal(env.OPENAPI_ENABLED, true);
@@ -91,6 +92,39 @@ describe('parseEnv', () => {
       validEnv({ CORS_ORIGIN: '' }),
       'CORS_ORIGIN must be a non-empty string',
     );
+  });
+
+  it('fails when CORS_ORIGIN is only empty comma-separated entries', () => {
+    assertEnvValidationFails(
+      validEnv({ CORS_ORIGIN: ' , , ' }),
+      'CORS_ORIGIN must contain at least one non-empty origin',
+    );
+  });
+
+  it('rejects wildcard CORS_ORIGIN in production', () => {
+    assertEnvValidationFails(
+      validEnv({ NODE_ENV: 'production', CORS_ORIGIN: '*' }),
+      'cannot be "\\*" in production',
+    );
+  });
+
+  it('parses comma-separated CORS_ORIGIN into corsOrigins', () => {
+    const env = parseEnv(
+      validEnv({
+        CORS_ORIGIN: ' https://app.example.com , https://admin.example.com ',
+      }),
+    );
+
+    assert.deepEqual(env.corsOrigins, [
+      'https://app.example.com',
+      'https://admin.example.com',
+    ]);
+  });
+
+  it('allows wildcard CORS_ORIGIN outside production', () => {
+    const env = parseEnv(validEnv({ NODE_ENV: 'test', CORS_ORIGIN: '*' }));
+
+    assert.equal(env.corsOrigins, '*');
   });
 
   it('defaults HOST to 0.0.0.0 when omitted', () => {

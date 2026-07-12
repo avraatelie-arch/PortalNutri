@@ -15,7 +15,7 @@ export async function registerPlugins(
   await registerSwagger(app, env);
 
   await app.register(cors, {
-    origin: env.CORS_ORIGIN,
+    origin: env.corsOrigins,
     exposedHeaders: [requestIdHeaderName],
   });
 }

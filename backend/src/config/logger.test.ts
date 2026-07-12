@@ -13,6 +13,7 @@ function createEnv(overrides: Partial<Env> = {}): Env {
     HOST: '0.0.0.0',
     DATABASE_URL: VALID_DATABASE_URL,
     CORS_ORIGIN: '*',
+    corsOrigins: '*',
     OPENAPI_ENABLED: true,
     LOG_LEVEL: 'info',
     LOG_PRETTY: true,

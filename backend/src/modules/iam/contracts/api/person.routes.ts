@@ -1,6 +1,5 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { z } from 'zod';
-import { CreatePersonCommand } from '../../application/create-person/create-person.command.js';
 import type { CreatePersonHandler } from '../../application/create-person/create-person.handler.js';
 import { DeactivatePersonCommand } from '../../application/deactivate-person/deactivate-person.command.js';
 import type { DeactivatePersonHandler } from '../../application/deactivate-person/deactivate-person.handler.js';
@@ -9,13 +8,13 @@ import type { FindPersonByIdHandler } from '../../application/find-person-by-id/
 import { UpdatePersonCommand } from '../../application/update-person/update-person.command.js';
 import type { UpdatePersonHandler } from '../../application/update-person/update-person.handler.js';
 import { mapApplicationErrorToHttp } from './map-application-error.js';
+import { toCreatePersonCommand } from './person-http.mapper.js';
 import {
   createPersonBodySchema,
   personIdParamsSchema,
   updatePersonBodySchema,
 } from './schemas/person.schemas.js';
-
-type CreatePersonBody = z.infer<typeof createPersonBodySchema>;
+import type { CreatePersonBody } from './schemas/person.schemas.js';
 type UpdatePersonBody = z.infer<typeof updatePersonBodySchema>;
 
 export interface PersonRouteHandlers {
@@ -46,7 +45,7 @@ export async function registerPersonRoutes(
       try {
         const body = request.body as CreatePersonBody;
         const response = await handlers.createPersonHandler.execute(
-          new CreatePersonCommand(body),
+          toCreatePersonCommand(body),
         );
 
         return reply.status(201).send(response);

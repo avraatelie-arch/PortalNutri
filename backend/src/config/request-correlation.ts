@@ -2,18 +2,27 @@ import { randomUUID } from 'node:crypto';
 import type { FastifyServerOptions } from 'fastify';
 
 const REQUEST_ID_HEADER = 'x-request-id';
+const MAX_REQUEST_ID_LENGTH = 128;
 
-function readIncomingRequestId(
-  headers: Record<string, string | string[] | undefined>,
-): string | undefined {
-  const incoming = headers[REQUEST_ID_HEADER];
-  const value = Array.isArray(incoming) ? incoming[0] : incoming;
-
-  if (typeof value === 'string' && value.length > 0) {
+export function resolveRequestId(value: string | undefined): string {
+  if (
+    typeof value === 'string' &&
+    value.length >= 1 &&
+    value.length <= MAX_REQUEST_ID_LENGTH
+  ) {
     return value;
   }
 
-  return undefined;
+  return randomUUID();
+}
+
+function readIncomingRequestId(
+  headers: Record<string, string | string[] | undefined>,
+): string {
+  const incoming = headers[REQUEST_ID_HEADER];
+  const value = Array.isArray(incoming) ? incoming[0] : incoming;
+
+  return resolveRequestId(value);
 }
 
 export function buildRequestCorrelationOptions(): Pick<
@@ -23,7 +32,7 @@ export function buildRequestCorrelationOptions(): Pick<
   return {
     requestIdHeader: false,
     genReqId(req) {
-      return readIncomingRequestId(req.headers) ?? randomUUID();
+      return readIncomingRequestId(req.headers);
     },
   };
 }

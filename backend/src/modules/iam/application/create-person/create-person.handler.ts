@@ -7,6 +7,7 @@ import { FullName } from '../../domain/value-objects/full-name.js';
 import { Person } from '../../domain/aggregates/person.aggregate.js';
 import { Phone } from '../../domain/value-objects/phone.js';
 import { PreferredName } from '../../domain/value-objects/preferred-name.js';
+import { executeUseCase } from '../execute-use-case.js';
 import { PersonDocumentAlreadyExistsError } from '../errors/person-document-already-exists.error.js';
 import { PersonEmailAlreadyExistsError } from '../errors/person-email-already-exists.error.js';
 import { CreatePersonCommand } from './create-person.command.js';
@@ -16,41 +17,42 @@ export class CreatePersonHandler {
   constructor(private readonly personRepository: PersonRepository) {}
 
   async execute(command: CreatePersonCommand): Promise<CreatePersonResponse> {
-    const { fullName, preferredName, email, documentType, documentValue, birthDate, phone } =
-      command.request;
+    return executeUseCase(async () => {
+      const { fullName, preferredName, email, documentType, document, birthDate, phone } =
+        command.request;
 
-    const fullNameVo = FullName.create(fullName);
-    const preferredNameVo = PreferredName.createOptional(preferredName);
-    const emailVo = Email.create(email);
-    const documentVo = Document.create(documentType, documentValue);
-    const birthDateVo = BirthDate.create(parseBirthDate(birthDate));
-    const phoneVo = Phone.createOptional(phone);
+      const fullNameVo = FullName.create(fullName);
+      const preferredNameVo = PreferredName.createOptional(preferredName);
+      const emailVo = Email.create(email);
+      const documentVo = Document.create(documentType, document);
+      const birthDateVo = BirthDate.create(parseBirthDate(birthDate));
+      const phoneVo = Phone.createOptional(phone);
 
-    if (await this.personRepository.existsByEmail(emailVo)) {
-      throw new PersonEmailAlreadyExistsError(emailVo.toString());
-    }
+      if (await this.personRepository.existsByEmail(emailVo)) {
+        throw new PersonEmailAlreadyExistsError(emailVo.toString());
+      }
 
-    if (await this.personRepository.existsByDocument(documentVo)) {
-      throw new PersonDocumentAlreadyExistsError(
-        documentVo.getType(),
-        documentVo.getValue(),
-      );
-    }
+      if (await this.personRepository.existsByDocument(documentVo)) {
+        throw new PersonDocumentAlreadyExistsError(
+          documentVo.getType(),
+          documentVo.getValue(),
+        );
+      }
 
-    const person = Person.create({
-      fullName: fullNameVo,
-      preferredName: preferredNameVo,
-      email: emailVo,
-      document: documentVo,
-      birthDate: birthDateVo,
-      phone: phoneVo,
+      const person = Person.create({
+        fullName: fullNameVo,
+        preferredName: preferredNameVo,
+        email: emailVo,
+        document: documentVo,
+        birthDate: birthDateVo,
+        phone: phoneVo,
+      });
+
+      await this.personRepository.save(person);
+      person.pullDomainEvents();
+
+      return CreatePersonResponse.from(person);
     });
-
-    await this.personRepository.save(person);
-
-    const events = person.pullDomainEvents();
-
-    return CreatePersonResponse.from(person, events);
   }
 }
 

@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { DomainError } from '../../domain/errors/domain-error.js';
 import { DocumentType } from '../../domain/value-objects/document.js';
 import { PersonStatus } from '../../domain/value-objects/person-status.js';
 import { CreatePersonCommand } from '../create-person/create-person.command.js';
 import { CreatePersonHandler } from '../create-person/create-person.handler.js';
 import { PersonEmailAlreadyExistsError } from '../errors/person-email-already-exists.error.js';
 import { PersonNotFoundError } from '../errors/person-not-found.error.js';
+import { PersonValidationError } from '../errors/person-validation.error.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
 import { InMemoryPersonRepository } from '../../infrastructure/repositories/in-memory-person.repository.js';
 import { UpdatePersonCommand } from './update-person.command.js';
@@ -25,7 +25,7 @@ async function seedPerson(
       fullName: 'Maria Silva',
       email: 'maria.silva@example.com',
       documentType: DocumentType.PASSPORT,
-      documentValue: 'AB123456',
+      document: 'AB123456',
       birthDate: '1990-06-15',
       phone: '+5511999999999',
       ...overrides,
@@ -42,13 +42,13 @@ describe('UpdatePersonHandler', () => {
 
     const result = await handler.execute(
       new UpdatePersonCommand({
-        personId: created.personId,
+        personId: created.id,
         fullName: 'Maria Oliveira',
       }),
     );
 
     assert.equal(result.fullName, 'Maria Oliveira');
-    assert.equal(result.id, created.personId);
+    assert.equal(result.id, created.id);
   });
 
   it('updates preferred name', async () => {
@@ -57,7 +57,7 @@ describe('UpdatePersonHandler', () => {
 
     const result = await handler.execute(
       new UpdatePersonCommand({
-        personId: created.personId,
+        personId: created.id,
         preferredName: '  Mari  ',
       }),
     );
@@ -73,7 +73,7 @@ describe('UpdatePersonHandler', () => {
 
     const result = await handler.execute(
       new UpdatePersonCommand({
-        personId: created.personId,
+        personId: created.id,
         preferredName: null,
       }),
     );
@@ -87,7 +87,7 @@ describe('UpdatePersonHandler', () => {
 
     const result = await handler.execute(
       new UpdatePersonCommand({
-        personId: created.personId,
+        personId: created.id,
         email: 'maria.oliveira@example.com',
       }),
     );
@@ -101,28 +101,12 @@ describe('UpdatePersonHandler', () => {
 
     const result = await handler.execute(
       new UpdatePersonCommand({
-        personId: created.personId,
+        personId: created.id,
         phone: '+5511888888888',
       }),
     );
 
     assert.equal(result.phone, '+5511888888888');
-  });
-
-  it('publishes PersonUpdated event in result', async () => {
-    const { repository, created } = await seedPerson();
-    const handler = new UpdatePersonHandler(repository);
-
-    const result = await handler.execute(
-      new UpdatePersonCommand({
-        personId: created.personId,
-        fullName: 'Maria Oliveira',
-      }),
-    );
-
-    assert.equal(result.events.length, 1);
-    assert.equal(result.events[0]?.eventName, 'PersonUpdated');
-    assert.equal(result.events[0]?.aggregateId, created.personId);
   });
 
   it('persists updated person in repository', async () => {
@@ -131,12 +115,12 @@ describe('UpdatePersonHandler', () => {
 
     await handler.execute(
       new UpdatePersonCommand({
-        personId: created.personId,
+        personId: created.id,
         fullName: 'Maria Oliveira',
       }),
     );
 
-    const saved = await repository.findById(PersonId.create(created.personId));
+    const saved = await repository.findById(PersonId.create(created.id));
 
     assert.ok(saved);
     assert.equal(saved.getFullName().toString(), 'Maria Oliveira');
@@ -148,7 +132,7 @@ describe('UpdatePersonHandler', () => {
 
     const result = await handler.execute(
       new UpdatePersonCommand({
-        personId: created.personId,
+        personId: created.id,
         fullName: 'Maria Oliveira',
         email: 'maria.oliveira@example.com',
       }),
@@ -169,7 +153,7 @@ describe('UpdatePersonHandler', () => {
         fullName: 'Maria Silva',
         email: 'maria.silva@example.com',
         documentType: DocumentType.PASSPORT,
-        documentValue: 'AB123456',
+        document: 'AB123456',
         birthDate: '1990-06-15',
       }),
     );
@@ -179,7 +163,7 @@ describe('UpdatePersonHandler', () => {
         fullName: 'João Santos',
         email: 'joao.santos@example.com',
         documentType: DocumentType.PASSPORT,
-        documentValue: 'CD987654',
+        document: 'CD987654',
         birthDate: '1985-03-20',
       }),
     );
@@ -188,14 +172,14 @@ describe('UpdatePersonHandler', () => {
       () =>
         updateHandler.execute(
           new UpdatePersonCommand({
-            personId: second.personId,
+            personId: second.id,
             email: 'maria.silva@example.com',
           }),
         ),
       PersonEmailAlreadyExistsError,
     );
 
-    const unchanged = await repository.findById(PersonId.create(first.personId));
+    const unchanged = await repository.findById(PersonId.create(first.id));
     assert.ok(unchanged);
     assert.equal(unchanged.getEmail().toString(), 'maria.silva@example.com');
   });
@@ -206,7 +190,7 @@ describe('UpdatePersonHandler', () => {
 
     const result = await handler.execute(
       new UpdatePersonCommand({
-        personId: created.personId,
+        personId: created.id,
         email: 'maria.silva@example.com',
         fullName: 'Maria Oliveira',
       }),
@@ -214,8 +198,6 @@ describe('UpdatePersonHandler', () => {
 
     assert.equal(result.email, 'maria.silva@example.com');
     assert.equal(result.fullName, 'Maria Oliveira');
-    assert.equal(result.events.length, 1);
-    assert.equal(result.events[0]?.eventName, 'PersonUpdated');
   });
 
   it('throws PersonNotFoundError when person does not exist', async () => {
@@ -240,7 +222,7 @@ describe('UpdatePersonHandler', () => {
 
   it('rejects updating an inactive person', async () => {
     const { repository, created } = await seedPerson();
-    const person = await repository.findById(PersonId.create(created.personId));
+    const person = await repository.findById(PersonId.create(created.id));
 
     assert.ok(person);
     person.deactivate();
@@ -253,30 +235,11 @@ describe('UpdatePersonHandler', () => {
       () =>
         handler.execute(
           new UpdatePersonCommand({
-            personId: created.personId,
+            personId: created.id,
             fullName: 'Maria Oliveira',
           }),
         ),
-      DomainError,
+      PersonValidationError,
     );
-  });
-
-  it('returns empty events when no fields change', async () => {
-    const { repository, created } = await seedPerson({
-      preferredName: 'Mari',
-    });
-    const handler = new UpdatePersonHandler(repository);
-
-    const result = await handler.execute(
-      new UpdatePersonCommand({
-        personId: created.personId,
-        fullName: 'Maria Silva',
-        preferredName: 'Mari',
-        email: 'maria.silva@example.com',
-        phone: '+5511999999999',
-      }),
-    );
-
-    assert.equal(result.events.length, 0);
   });
 });

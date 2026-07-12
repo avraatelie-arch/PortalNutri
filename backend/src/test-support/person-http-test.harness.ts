@@ -56,7 +56,7 @@ export function validCreatePersonPayload(suffix = nextFixtureSuffix()) {
     fullName: 'Maria Silva',
     email: `maria.${suffix}@example.com`,
     documentType: DocumentType.PASSPORT,
-    documentValue: `AB${suffix}`,
+    document: `AB${suffix}`,
     birthDate: '1990-06-15',
     phone: '+5511999999999',
   };

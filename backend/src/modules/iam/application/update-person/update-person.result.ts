@@ -1,13 +1,6 @@
 import type { Person } from '../../domain/aggregates/person.aggregate.js';
-import type { DomainEvent } from '../../domain/events/domain-event.js';
 import type { DocumentType } from '../../domain/value-objects/document.js';
 import type { PersonStatus } from '../../domain/value-objects/person-status.js';
-
-export interface UpdatePersonEventDto {
-  eventName: string;
-  aggregateId: string;
-  occurredAt: string;
-}
 
 export interface UpdatePersonResult {
   id: string;
@@ -21,13 +14,9 @@ export interface UpdatePersonResult {
   status: PersonStatus;
   createdAt: string;
   updatedAt: string;
-  events: readonly UpdatePersonEventDto[];
 }
 
-export function toUpdatePersonResult(
-  person: Person,
-  events: DomainEvent[],
-): UpdatePersonResult {
+export function toUpdatePersonResult(person: Person): UpdatePersonResult {
   const phone = person.getPhone();
 
   return {
@@ -42,10 +31,5 @@ export function toUpdatePersonResult(
     status: person.getStatus(),
     createdAt: person.getCreatedAt().toISOString(),
     updatedAt: person.getUpdatedAt().toISOString(),
-    events: events.map((event) => ({
-      eventName: event.eventName,
-      aggregateId: event.aggregateId,
-      occurredAt: event.occurredAt.toISOString(),
-    })),
   };
 }

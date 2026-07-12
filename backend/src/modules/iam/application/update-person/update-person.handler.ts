@@ -5,6 +5,7 @@ import { FullName } from '../../domain/value-objects/full-name.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
 import { Phone } from '../../domain/value-objects/phone.js';
 import { PreferredName } from '../../domain/value-objects/preferred-name.js';
+import { executeUseCase } from '../execute-use-case.js';
 import { PersonEmailAlreadyExistsError } from '../errors/person-email-already-exists.error.js';
 import { PersonNotFoundError } from '../errors/person-not-found.error.js';
 import { UpdatePersonCommand } from './update-person.command.js';
@@ -14,45 +15,46 @@ export class UpdatePersonHandler {
   constructor(private readonly personRepository: PersonRepository) {}
 
   async execute(command: UpdatePersonCommand) {
-    const { personId, fullName, preferredName, email, phone } = command.request;
+    return executeUseCase(async () => {
+      const { personId, fullName, preferredName, email, phone } = command.request;
 
-    const id = PersonId.create(personId);
-    const person = await this.personRepository.findById(id);
+      const id = PersonId.create(personId);
+      const person = await this.personRepository.findById(id);
 
-    if (!person) {
-      throw new PersonNotFoundError(personId);
-    }
-
-    const updateProps: UpdatePersonProps = {};
-
-    if (fullName !== undefined) {
-      updateProps.fullName = FullName.create(fullName);
-    }
-
-    if (preferredName !== undefined) {
-      updateProps.preferredName = PreferredName.createOptional(preferredName);
-    }
-
-    if (email !== undefined) {
-      const emailVo = Email.create(email);
-      const existingByEmail = await this.personRepository.findByEmail(emailVo);
-
-      if (existingByEmail && !existingByEmail.getId().equals(person.getId())) {
-        throw new PersonEmailAlreadyExistsError(emailVo.toString());
+      if (!person) {
+        throw new PersonNotFoundError(personId);
       }
 
-      updateProps.email = emailVo;
-    }
+      const updateProps: UpdatePersonProps = {};
 
-    if (phone !== undefined) {
-      updateProps.phone = Phone.createOptional(phone);
-    }
+      if (fullName !== undefined) {
+        updateProps.fullName = FullName.create(fullName);
+      }
 
-    person.update(updateProps);
-    await this.personRepository.save(person);
+      if (preferredName !== undefined) {
+        updateProps.preferredName = PreferredName.createOptional(preferredName);
+      }
 
-    const events = person.pullDomainEvents();
+      if (email !== undefined) {
+        const emailVo = Email.create(email);
+        const existingByEmail = await this.personRepository.findByEmail(emailVo);
 
-    return toUpdatePersonResult(person, events);
+        if (existingByEmail && !existingByEmail.getId().equals(person.getId())) {
+          throw new PersonEmailAlreadyExistsError(emailVo.toString());
+        }
+
+        updateProps.email = emailVo;
+      }
+
+      if (phone !== undefined) {
+        updateProps.phone = Phone.createOptional(phone);
+      }
+
+      person.update(updateProps);
+      await this.personRepository.save(person);
+      person.pullDomainEvents();
+
+      return toUpdatePersonResult(person);
+    });
   }
 }

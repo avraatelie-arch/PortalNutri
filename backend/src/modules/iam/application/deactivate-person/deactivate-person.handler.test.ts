@@ -23,7 +23,7 @@ async function seedPerson(
       fullName: 'Maria Silva',
       email: 'maria.silva@example.com',
       documentType: DocumentType.PASSPORT,
-      documentValue: 'AB123456',
+      document: 'AB123456',
       birthDate: '1990-06-15',
       phone: '+5511999999999',
       ...overrides,
@@ -39,23 +39,20 @@ describe('DeactivatePersonHandler', () => {
     const handler = new DeactivatePersonHandler(repository);
 
     const result = await handler.execute(
-      new DeactivatePersonCommand(created.personId),
+      new DeactivatePersonCommand(created.id),
     );
 
-    assert.equal(result.id, created.personId);
+    assert.equal(result.id, created.id);
     assert.equal(result.status, PersonStatus.Inactive);
-    assert.equal(result.events.length, 1);
-    assert.equal(result.events[0]?.eventName, 'PersonDeactivated');
-    assert.equal(result.events[0]?.aggregateId, created.personId);
   });
 
   it('persists deactivated person in repository', async () => {
     const { repository, created } = await seedPerson();
     const handler = new DeactivatePersonHandler(repository);
 
-    await handler.execute(new DeactivatePersonCommand(created.personId));
+    await handler.execute(new DeactivatePersonCommand(created.id));
 
-    const saved = await repository.findById(PersonId.create(created.personId));
+    const saved = await repository.findById(PersonId.create(created.id));
 
     assert.ok(saved);
     assert.equal(saved.getStatus(), PersonStatus.Inactive);
@@ -66,12 +63,12 @@ describe('DeactivatePersonHandler', () => {
     const { repository, created } = await seedPerson();
     const handler = new DeactivatePersonHandler(repository);
 
-    await handler.execute(new DeactivatePersonCommand(created.personId));
+    await handler.execute(new DeactivatePersonCommand(created.id));
 
-    const saved = await repository.findById(PersonId.create(created.personId));
+    const saved = await repository.findById(PersonId.create(created.id));
 
     assert.ok(saved);
-    assert.equal(saved.getId().toString(), created.personId);
+    assert.equal(saved.getId().toString(), created.id);
   });
 
   it('does not change other attributes', async () => {
@@ -79,12 +76,12 @@ describe('DeactivatePersonHandler', () => {
       preferredName: 'Mari',
     });
     const handler = new DeactivatePersonHandler(repository);
-    const before = await repository.findById(PersonId.create(created.personId));
+    const before = await repository.findById(PersonId.create(created.id));
 
     assert.ok(before);
 
     const result = await handler.execute(
-      new DeactivatePersonCommand(created.personId),
+      new DeactivatePersonCommand(created.id),
     );
 
     assert.equal(result.fullName, 'Maria Silva');
@@ -104,18 +101,17 @@ describe('DeactivatePersonHandler', () => {
     );
   });
 
-  it('does not publish event when person is already inactive', async () => {
+  it('is idempotent when person is already inactive', async () => {
     const { repository, created } = await seedPerson();
     const handler = new DeactivatePersonHandler(repository);
 
-    await handler.execute(new DeactivatePersonCommand(created.personId));
+    await handler.execute(new DeactivatePersonCommand(created.id));
 
     const result = await handler.execute(
-      new DeactivatePersonCommand(created.personId),
+      new DeactivatePersonCommand(created.id),
     );
 
     assert.equal(result.status, PersonStatus.Inactive);
-    assert.equal(result.events.length, 0);
   });
 
   it('throws PersonNotFoundError when person does not exist', async () => {

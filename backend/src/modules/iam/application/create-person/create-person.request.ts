@@ -5,7 +5,7 @@ export interface CreatePersonRequest {
   preferredName?: string | null;
   email: string;
   documentType: DocumentType;
-  documentValue: string;
+  document: string;
   birthDate: string;
   phone?: string | null;
 }

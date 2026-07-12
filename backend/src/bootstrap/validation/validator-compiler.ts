@@ -1,10 +1,14 @@
 import type {
   FastifyError,
   FastifyInstance,
+  FastifyReply,
+  FastifyRequest,
   FastifySchema,
   FastifySchemaValidationError,
 } from 'fastify';
 import { ZodError, type ZodTypeAny } from 'zod';
+
+export const GENERIC_INTERNAL_ERROR_MESSAGE = 'An unexpected error occurred.';
 
 function isZodSchema(schema: unknown): schema is ZodTypeAny {
   return (
@@ -43,25 +47,30 @@ export function validatorCompiler({ schema }: { schema: FastifySchema }) {
   };
 }
 
+export function handleGlobalError(
+  error: FastifyError,
+  request: FastifyRequest,
+  reply: FastifyReply,
+): void {
+  if (error.validation) {
+    reply.status(400).send({
+      statusCode: 400,
+      error: 'Bad Request',
+      message: 'Validation failed',
+      details: error.validation,
+    });
+    return;
+  }
+
+  request.log.error(error);
+  reply.status(500).send({
+    statusCode: 500,
+    error: 'Internal Server Error',
+    message: GENERIC_INTERNAL_ERROR_MESSAGE,
+  });
+}
+
 export function registerGlobalValidation(app: FastifyInstance) {
   app.setValidatorCompiler(validatorCompiler);
-
-  app.setErrorHandler((error: FastifyError, request, reply) => {
-    if (error.validation) {
-      reply.status(400).send({
-        statusCode: 400,
-        error: 'Bad Request',
-        message: 'Validation failed',
-        details: error.validation,
-      });
-      return;
-    }
-
-    request.log.error(error);
-    reply.status(error.statusCode ?? 500).send({
-      statusCode: error.statusCode ?? 500,
-      error: error.name ?? 'Internal Server Error',
-      message: error.message,
-    });
-  });
+  app.setErrorHandler(handleGlobalError);
 }
