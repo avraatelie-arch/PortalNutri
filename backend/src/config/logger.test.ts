@@ -3,11 +3,15 @@ import { describe, it } from 'node:test';
 import type { Env } from './env.js';
 import { buildLoggerOptions } from './logger.js';
 
+const VALID_DATABASE_URL =
+  'postgresql://postgres:postgres@localhost:5432/portalnutri?schema=public';
+
 function createEnv(overrides: Partial<Env> = {}): Env {
   return {
     NODE_ENV: 'development',
     PORT: 3333,
     HOST: '0.0.0.0',
+    DATABASE_URL: VALID_DATABASE_URL,
     CORS_ORIGIN: '*',
     OPENAPI_ENABLED: true,
     LOG_LEVEL: 'info',

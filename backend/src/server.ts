@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { createApp } from './bootstrap/index.js';
 
 const start = async () => {

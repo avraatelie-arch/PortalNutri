@@ -2,19 +2,20 @@ import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../../app.js';
+import {
+  configureIntegrationTestEnv,
+  requireDatabaseUrl,
+} from '../../config/test-env.js';
+
+requireDatabaseUrl();
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function configureRequestCorrelationTestEnv(): void {
-  process.env.NODE_ENV = 'test';
-  process.env.OPENAPI_ENABLED = 'false';
-}
 
 describe('Request correlation (integration)', () => {
   let app: FastifyInstance;
 
   before(async () => {
-    configureRequestCorrelationTestEnv();
+    configureIntegrationTestEnv();
     app = await buildApp();
   });
 

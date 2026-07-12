@@ -1,5 +1,8 @@
 import type { FastifyInstance, InjectOptions } from 'fastify';
 import { buildApp } from '../app.js';
+import { configureIntegrationTestEnv } from '../config/test-env.js';
+
+export { requireDatabaseUrl } from '../config/test-env.js';
 import { getPrismaClient } from '../core/database/prisma-client.js';
 import { Person } from '../modules/iam/domain/aggregates/person.aggregate.js';
 import { DocumentType } from '../modules/iam/domain/value-objects/document.js';
@@ -34,21 +37,8 @@ export interface SeededPerson {
 
 let fixtureCounter = 0;
 
-export function requireDatabaseUrl(): void {
-  if (!process.env.DATABASE_URL) {
-    throw new Error(
-      'Person HTTP integration tests require PostgreSQL. Set DATABASE_URL before running pnpm test:integration.',
-    );
-  }
-}
-
-export function configurePersonHttpTestEnv(): void {
-  process.env.NODE_ENV = 'test';
-  process.env.OPENAPI_ENABLED = 'false';
-}
-
 export async function createPersonHttpTestApp(): Promise<FastifyInstance> {
-  configurePersonHttpTestEnv();
+  configureIntegrationTestEnv();
   return buildApp();
 }
 

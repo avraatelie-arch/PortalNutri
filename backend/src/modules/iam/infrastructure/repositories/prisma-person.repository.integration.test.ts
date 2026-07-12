@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import { PrismaClient } from '@prisma/client';
+import { requireDatabaseUrl } from '../../../../config/test-env.js';
 import { CreatePersonCommand } from '../../application/create-person/create-person.command.js';
 import { CreatePersonHandler } from '../../application/create-person/create-person.handler.js';
 import { DeactivatePersonCommand } from '../../application/deactivate-person/deactivate-person.command.js';
@@ -14,6 +15,8 @@ import { PersonId } from '../../domain/value-objects/person-id.js';
 import { PersonStatus } from '../../domain/value-objects/person-status.js';
 import { PrismaPersonRepository } from './prisma-person.repository.js';
 
+requireDatabaseUrl();
+
 const prisma = new PrismaClient();
 const repository = new PrismaPersonRepository(prisma);
 
@@ -21,7 +24,7 @@ async function resetPersons() {
   await prisma.person.deleteMany();
 }
 
-describe('PrismaPersonRepository', { skip: !process.env.DATABASE_URL }, () => {
+describe('PrismaPersonRepository (integration)', () => {
   before(async () => {
     await resetPersons();
   });
