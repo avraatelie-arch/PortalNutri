@@ -5,6 +5,8 @@ import { parseEnv } from './env.js';
 const VALID_DATABASE_URL =
   'postgresql://postgres:postgres@localhost:5432/portalnutri?schema=public';
 
+const TEST_JWT_SECRET = 'test-jwt-secret-with-at-least-32-characters!!';
+
 function validEnv(
   overrides: Record<string, string | undefined> = {},
 ): Record<string, string | undefined> {
@@ -15,6 +17,7 @@ function validEnv(
     DATABASE_URL: VALID_DATABASE_URL,
     CORS_ORIGIN: '*',
     LOG_LEVEL: 'info',
+    JWT_SECRET: TEST_JWT_SECRET,
     ...overrides,
   };
 }
@@ -43,6 +46,11 @@ describe('parseEnv', () => {
     assert.equal(env.ARGON2_TIME_COST, 3);
     assert.equal(env.ARGON2_MEMORY_COST, 65536);
     assert.equal(env.ARGON2_PARALLELISM, 4);
+    assert.equal(env.JWT_SECRET, TEST_JWT_SECRET);
+    assert.equal(env.JWT_ISSUER, 'portalnutri');
+    assert.equal(env.JWT_ACCESS_TOKEN_TTL, '15m');
+    assert.equal(env.JWT_REFRESH_TOKEN_TTL, '7d');
+    assert.equal(env.JWT_SESSION_TTL, '30d');
     assert.equal(env.LOG_LEVEL, 'info');
     assert.equal(env.LOG_PRETTY, true);
     assert.equal(env.OPENAPI_ENABLED, true);
@@ -134,5 +142,30 @@ describe('parseEnv', () => {
     const env = parseEnv(validEnv({ HOST: undefined }));
 
     assert.equal(env.HOST, '0.0.0.0');
+  });
+
+  it('fails when JWT_SECRET is missing', () => {
+    assertEnvValidationFails(
+      validEnv({ JWT_SECRET: undefined }),
+      'JWT_SECRET is required',
+    );
+  });
+
+  it('fails when JWT_SECRET is too short outside production', () => {
+    assertEnvValidationFails(
+      validEnv({ JWT_SECRET: 'short-secret' }),
+      'JWT_SECRET must be at least 32 characters outside production',
+    );
+  });
+
+  it('requires a longer JWT_SECRET in production', () => {
+    assertEnvValidationFails(
+      validEnv({
+        NODE_ENV: 'production',
+        CORS_ORIGIN: 'https://app.example.com',
+        JWT_SECRET: TEST_JWT_SECRET,
+      }),
+      'JWT_SECRET must be at least 64 characters in production',
+    );
   });
 });

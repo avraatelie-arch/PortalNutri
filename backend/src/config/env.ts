@@ -112,6 +112,41 @@ const envSchema = z
       .int('ARGON2_PARALLELISM must be a positive integer')
       .min(1, 'ARGON2_PARALLELISM must be a positive integer')
       .default(4),
+    JWT_SECRET: z
+      .string({
+        required_error: 'JWT_SECRET is required',
+      })
+      .min(1, 'JWT_SECRET is required'),
+    JWT_ISSUER: z
+      .string()
+      .min(1, 'JWT_ISSUER must be a non-empty string')
+      .default('portalnutri'),
+    JWT_ACCESS_TOKEN_TTL: z
+      .string()
+      .min(1, 'JWT_ACCESS_TOKEN_TTL must be a non-empty string')
+      .default('15m'),
+    JWT_REFRESH_TOKEN_TTL: z
+      .string()
+      .min(1, 'JWT_REFRESH_TOKEN_TTL must be a non-empty string')
+      .default('7d'),
+    JWT_SESSION_TTL: z
+      .string()
+      .min(1, 'JWT_SESSION_TTL must be a non-empty string')
+      .default('30d'),
+  })
+  .superRefine((data, ctx) => {
+    const minJwtSecretLength = data.NODE_ENV === 'production' ? 64 : 32;
+
+    if (data.JWT_SECRET.length < minJwtSecretLength) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['JWT_SECRET'],
+        message:
+          data.NODE_ENV === 'production'
+            ? 'JWT_SECRET must be at least 64 characters in production'
+            : 'JWT_SECRET must be at least 32 characters outside production',
+      });
+    }
   })
   .superRefine((data, ctx) => {
     if (data.CORS_ORIGIN === '*') {

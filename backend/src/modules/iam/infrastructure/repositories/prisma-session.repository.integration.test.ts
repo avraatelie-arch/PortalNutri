@@ -4,25 +4,31 @@ import { PrismaClient } from '@prisma/client';
 import { requireDatabaseUrl } from '../../../../config/test-env.js';
 import { RegisterCredentialCommand } from '../../application/register-credential/register-credential.command.js';
 import { RegisterCredentialHandler } from '../../application/register-credential/register-credential.handler.js';
+import { AuthenticatePersonCommand } from '../../application/authenticate-person/authenticate-person.command.js';
+import { AuthenticatePersonHandler } from '../../application/authenticate-person/authenticate-person.handler.js';
 import { CreatePersonCommand } from '../../application/create-person/create-person.command.js';
 import { CreatePersonHandler } from '../../application/create-person/create-person.handler.js';
 import { DocumentType } from '../../domain/value-objects/document.js';
-import { CredentialStatus } from '../../domain/value-objects/credential-status.js';
-import { PersonId } from '../../domain/value-objects/person-id.js';
+import { SessionId } from '../../domain/value-objects/session-id.js';
 import { Argon2PasswordHasher } from '../cryptography/argon2-password-hasher.js';
+import { JoseTokenService } from '../tokens/jose-token.service.js';
 import { PrismaCredentialRepository } from './prisma-credential.repository.js';
 import { PrismaPersonRepository } from './prisma-person.repository.js';
+import { PrismaSessionRepository } from './prisma-session.repository.js';
+import { createTestJwtConfig } from '../../../../test-support/jwt-test.config.js';
 
 requireDatabaseUrl();
 
 const prisma = new PrismaClient();
 const personRepository = new PrismaPersonRepository(prisma);
 const credentialRepository = new PrismaCredentialRepository(prisma);
+const sessionRepository = new PrismaSessionRepository(prisma);
 const passwordHasher = new Argon2PasswordHasher({
   timeCost: 2,
   memoryCost: 65536,
   parallelism: 1,
 });
+const tokenService = new JoseTokenService(createTestJwtConfig());
 
 async function resetAuthData() {
   await prisma.session.deleteMany();
@@ -30,7 +36,7 @@ async function resetAuthData() {
   await prisma.person.deleteMany();
 }
 
-describe('PrismaCredentialRepository (integration)', () => {
+describe('PrismaSessionRepository (integration)', () => {
   before(async () => {
     await resetAuthData();
   });
@@ -40,12 +46,19 @@ describe('PrismaCredentialRepository (integration)', () => {
     await prisma.$disconnect();
   });
 
-  it('persists and finds a credential by person id', async () => {
+  it('persists and finds a session by id', async () => {
     const createHandler = new CreatePersonHandler(personRepository);
     const registerHandler = new RegisterCredentialHandler(
       personRepository,
       credentialRepository,
       passwordHasher,
+    );
+    const authenticateHandler = new AuthenticatePersonHandler(
+      personRepository,
+      credentialRepository,
+      sessionRepository,
+      passwordHasher,
+      tokenService,
     );
 
     const created = await createHandler.execute(
@@ -58,21 +71,26 @@ describe('PrismaCredentialRepository (integration)', () => {
       }),
     );
 
-    const registered = await registerHandler.execute(
+    await registerHandler.execute(
       new RegisterCredentialCommand({
         personId: created.id,
         password: 'SecureP@ssw0rd',
       }),
     );
 
-    const found = await credentialRepository.findByPersonId(
-      PersonId.create(created.id),
+    const authenticated = await authenticateHandler.execute(
+      new AuthenticatePersonCommand({
+        email: 'maria.silva@example.com',
+        password: 'SecureP@ssw0rd',
+      }),
     );
 
+    const [sessionId] = authenticated.refreshToken.split('.');
+    const found = await sessionRepository.findById(SessionId.create(sessionId!));
+
     assert.ok(found);
-    assert.equal(found.getId().toString(), registered.id);
     assert.equal(found.getPersonId().toString(), created.id);
-    assert.equal(found.getStatus(), CredentialStatus.Active);
-    assert.match(found.getPasswordHash().toString(), /^\$argon2id\$/);
+    assert.equal(found.getTenantId(), null);
+    assert.equal(found.isActive(), true);
   });
 });
