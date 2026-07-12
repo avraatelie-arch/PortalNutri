@@ -22,11 +22,29 @@ const envSchema = z
 
         return undefined;
       }),
+    LOG_LEVEL: z
+      .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'])
+      .default('info'),
+    LOG_PRETTY: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((value) => {
+        if (value === 'true') {
+          return true;
+        }
+
+        if (value === 'false') {
+          return false;
+        }
+
+        return undefined;
+      }),
   })
   .transform((data) => ({
     ...data,
     OPENAPI_ENABLED:
       data.OPENAPI_ENABLED ?? data.NODE_ENV !== 'production',
+    LOG_PRETTY: data.LOG_PRETTY ?? data.NODE_ENV === 'development',
   }));
 
 export type Env = z.infer<typeof envSchema>;
