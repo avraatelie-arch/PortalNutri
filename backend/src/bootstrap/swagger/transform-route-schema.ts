@@ -35,6 +35,18 @@ function isIamRoute(url: string): boolean {
   return url.startsWith('/api/iam') || url.startsWith('/api/auth');
 }
 
+function isPublicAuthRoute(url: string): boolean {
+  return url === '/api/auth/login' || url === '/api/auth/refresh';
+}
+
+function requiresBearerAuth(url: string): boolean {
+  return (
+    isIamRoute(url)
+    && !isPublicAuthRoute(url)
+    && url !== '/api/auth/credentials'
+  );
+}
+
 export function transformRouteSchema({
   schema,
   url,
@@ -73,6 +85,10 @@ export function transformRouteSchema({
 
   if (isIamRoute(url)) {
     transformedSchema.tags = ['IAM'];
+  }
+
+  if (requiresBearerAuth(url) && transformedSchema.security === undefined) {
+    transformedSchema.security = [{ bearerAuth: [] }];
   }
 
   return {

@@ -11,6 +11,10 @@ import {
   seedPersonFixture,
   validCreatePersonPayload,
 } from '../../../../test-support/person-http-test.harness.js';
+import {
+  seedAuthenticatedFixture,
+  withBearerToken,
+} from '../../../../test-support/auth-http-test.harness.js';
 
 requireDatabaseUrl();
 
@@ -18,6 +22,7 @@ const UNKNOWN_PERSON_ID = '550e8400-e29b-41d4-a716-446655440099';
 
 describe('Person HTTP routes (integration)', () => {
   let app: FastifyInstance;
+  let accessToken: string;
 
   before(async () => {
     app = await createPersonHttpTestApp();
@@ -25,17 +30,25 @@ describe('Person HTTP routes (integration)', () => {
 
   beforeEach(async () => {
     await resetPersons();
+    const auth = await seedAuthenticatedFixture(app);
+    accessToken = auth.tokens.accessToken;
   });
 
   after(async () => {
     await app.close();
   });
 
+  function authorizedInject(
+    options: Parameters<typeof injectJson>[1],
+  ) {
+    return injectJson(app, withBearerToken(accessToken, options));
+  }
+
   describe('POST /api/iam/persons', () => {
     it('creates a person', async () => {
       const payload = validCreatePersonPayload();
 
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'POST',
         url: '/api/iam/persons',
         payload,
@@ -52,7 +65,7 @@ describe('Person HTTP routes (integration)', () => {
     it('returns 409 for duplicate email', async () => {
       const payload = validCreatePersonPayload();
 
-      const first = await injectJson(app, {
+      const first = await authorizedInject({
         method: 'POST',
         url: '/api/iam/persons',
         payload,
@@ -60,7 +73,7 @@ describe('Person HTTP routes (integration)', () => {
 
       assert.equal(first.statusCode, 201);
 
-      const duplicate = await injectJson(app, {
+      const duplicate = await authorizedInject({
         method: 'POST',
         url: '/api/iam/persons',
         payload: {
@@ -75,7 +88,7 @@ describe('Person HTTP routes (integration)', () => {
     it('returns 409 for duplicate document', async () => {
       const payload = validCreatePersonPayload();
 
-      const first = await injectJson(app, {
+      const first = await authorizedInject({
         method: 'POST',
         url: '/api/iam/persons',
         payload,
@@ -83,7 +96,7 @@ describe('Person HTTP routes (integration)', () => {
 
       assert.equal(first.statusCode, 201);
 
-      const duplicate = await injectJson(app, {
+      const duplicate = await authorizedInject({
         method: 'POST',
         url: '/api/iam/persons',
         payload: {
@@ -96,7 +109,7 @@ describe('Person HTTP routes (integration)', () => {
     });
 
     it('returns 400 for invalid payload', async () => {
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'POST',
         url: '/api/iam/persons',
         payload: {
@@ -105,6 +118,16 @@ describe('Person HTTP routes (integration)', () => {
       });
 
       assert.equal(response.statusCode, 400);
+    });
+
+    it('returns 401 without bearer token', async () => {
+      const response = await injectJson(app, {
+        method: 'POST',
+        url: '/api/iam/persons',
+        payload: validCreatePersonPayload(),
+      });
+
+      assert.equal(response.statusCode, 401);
     });
   });
 
@@ -117,7 +140,7 @@ describe('Person HTTP routes (integration)', () => {
         documentValue: 'GET123456',
       });
 
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'GET',
         url: `/api/iam/persons/${seeded.personId}`,
       });
@@ -132,7 +155,7 @@ describe('Person HTTP routes (integration)', () => {
     });
 
     it('returns 400 for invalid id', async () => {
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'GET',
         url: '/api/iam/persons/not-a-uuid',
       });
@@ -141,7 +164,7 @@ describe('Person HTTP routes (integration)', () => {
     });
 
     it('returns 404 when person is not found', async () => {
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'GET',
         url: `/api/iam/persons/${UNKNOWN_PERSON_ID}`,
       });
@@ -159,7 +182,7 @@ describe('Person HTTP routes (integration)', () => {
         documentValue: 'PUT123456',
       });
 
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'PUT',
         url: `/api/iam/persons/${seeded.personId}`,
         payload: {
@@ -186,7 +209,7 @@ describe('Person HTTP routes (integration)', () => {
         documentValue: 'PUT222222',
       });
 
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'PUT',
         url: `/api/iam/persons/${second.personId}`,
         payload: {
@@ -202,7 +225,7 @@ describe('Person HTTP routes (integration)', () => {
         documentValue: 'PUT333333',
       });
 
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'PUT',
         url: `/api/iam/persons/${seeded.personId}`,
         payload: {},
@@ -212,7 +235,7 @@ describe('Person HTTP routes (integration)', () => {
     });
 
     it('returns 404 when person is not found', async () => {
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'PUT',
         url: `/api/iam/persons/${UNKNOWN_PERSON_ID}`,
         payload: {
@@ -230,7 +253,7 @@ describe('Person HTTP routes (integration)', () => {
         documentValue: 'DEL111111',
       });
 
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'DELETE',
         url: `/api/iam/persons/${seeded.personId}`,
       });
@@ -248,7 +271,7 @@ describe('Person HTTP routes (integration)', () => {
         documentValue: 'DEL222222',
       });
 
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'DELETE',
         url: `/api/iam/persons/${seeded.personId}`,
       });
@@ -265,7 +288,7 @@ describe('Person HTTP routes (integration)', () => {
     });
 
     it('returns 404 when person is not found', async () => {
-      const response = await injectJson(app, {
+      const response = await authorizedInject({
         method: 'DELETE',
         url: `/api/iam/persons/${UNKNOWN_PERSON_ID}`,
       });

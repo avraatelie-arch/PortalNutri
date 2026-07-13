@@ -5,12 +5,18 @@ export interface AccessTokenClaims {
   jti: string;
 }
 
+export interface IssuedAccessToken {
+  accessToken: string;
+  accessTokenExpiresAt: Date;
+}
+
 export interface TokenService {
   issueAccessToken(claims: {
     personId: string;
     sessionId: string;
     tenantId: string | null;
-  }): Promise<string>;
+  }): Promise<IssuedAccessToken>;
+  computeAccessTokenExpiresAt(now?: Date): Date;
   verifyAccessToken(token: string): Promise<AccessTokenClaims>;
   generateRefreshTokenSecret(): string;
   formatRefreshToken(sessionId: string, secret: string): string;

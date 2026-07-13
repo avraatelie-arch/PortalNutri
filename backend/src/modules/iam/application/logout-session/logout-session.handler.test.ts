@@ -75,11 +75,9 @@ async function login() {
     }),
   );
 
-  const [sessionId] = authenticated.refreshToken.split('.');
-
   return {
     sessionRepository,
-    sessionId: sessionId!,
+    sessionId: authenticated.sessionId,
     logoutHandler: new LogoutSessionHandler(sessionRepository),
   };
 }

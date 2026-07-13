@@ -61,7 +61,7 @@ export class RefreshSessionHandler {
 
       await this.sessionRepository.save(session);
 
-      const accessToken = await this.tokenService.issueAccessToken({
+      const issuedAccessToken = await this.tokenService.issueAccessToken({
         personId: session.getPersonId().toString(),
         sessionId: session.getId().toString(),
         tenantId: session.getTenantId(),
@@ -74,7 +74,12 @@ export class RefreshSessionHandler {
 
       session.pullDomainEvents();
 
-      return RefreshSessionResponse.from(accessToken, nextRefreshToken);
+      return RefreshSessionResponse.from(
+        issuedAccessToken.accessToken,
+        nextRefreshToken,
+        issuedAccessToken.accessTokenExpiresAt,
+        session.getId().toString(),
+      );
     });
   }
 }

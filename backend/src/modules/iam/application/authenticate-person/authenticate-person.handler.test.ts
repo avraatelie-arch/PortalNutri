@@ -106,12 +106,12 @@ describe('AuthenticatePersonHandler', () => {
     );
 
     assert.match(response.accessToken, /^eyJ/);
-    const [sessionId] = response.refreshToken.split('.');
     const session = await sessionRepository.findById(
-      SessionId.create(sessionId!),
+      SessionId.create(response.sessionId),
     );
 
     assert.ok(session);
+    assert.equal(response.sessionId, session.getId().toString());
     assert.equal(session.getPersonId().toString(), created.id);
   });
 
@@ -213,10 +213,11 @@ describe('AuthenticatePersonHandler', () => {
 
     assert.ok(response.accessToken);
     assert.ok(response.refreshToken);
+    assert.ok(response.accessTokenExpiresAt instanceof Date);
+    assert.match(response.sessionId, /^[0-9a-f-]{36}$/i);
 
-    const [sessionId] = response.refreshToken.split('.');
     const session = await sessionRepository.findById(
-      SessionId.create(sessionId!),
+      SessionId.create(response.sessionId),
     );
 
     assert.ok(session);

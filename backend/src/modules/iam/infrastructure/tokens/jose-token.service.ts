@@ -1,12 +1,14 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { SignJWT, jwtVerify } from 'jose';
 import type { JwtConfig } from '../../../../config/jwt.js';
+import { addDuration } from '../../../../config/duration.js';
 import {
   computeRefreshTokenExpiresAt,
   computeSessionExpiresAt,
 } from '../../../../config/jwt.js';
 import type {
   AccessTokenClaims,
+  IssuedAccessToken,
   TokenService,
 } from '../../application/services/token-service.port.js';
 import { InvalidAccessTokenError } from '../../application/errors/invalid-access-token.error.js';
@@ -21,11 +23,17 @@ export class JoseTokenService implements TokenService {
     this.secretKey = new TextEncoder().encode(config.secret);
   }
 
+  computeAccessTokenExpiresAt(now: Date = new Date()): Date {
+    return addDuration(now, this.config.accessTokenTtl);
+  }
+
   async issueAccessToken(claims: {
     personId: string;
     sessionId: string;
     tenantId: string | null;
-  }): Promise<string> {
+  }): Promise<IssuedAccessToken> {
+    const issuedAt = new Date();
+    const accessTokenExpiresAt = this.computeAccessTokenExpiresAt(issuedAt);
     const jti = crypto.randomUUID();
     const builder = new SignJWT({
       sid: claims.sessionId,
@@ -35,11 +43,16 @@ export class JoseTokenService implements TokenService {
       .setSubject(claims.personId)
       .setIssuer(this.config.issuer)
       .setJti(jti)
-      .setIssuedAt();
+      .setIssuedAt(issuedAt);
 
-    return builder
+    const accessToken = await builder
       .setExpirationTime(this.config.accessTokenTtl)
       .sign(this.secretKey);
+
+    return {
+      accessToken,
+      accessTokenExpiresAt,
+    };
   }
 
   async verifyAccessToken(token: string): Promise<AccessTokenClaims> {

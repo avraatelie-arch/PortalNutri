@@ -12,15 +12,29 @@ import { RefreshSessionHandler } from './application/refresh-session/refresh-ses
 import { RegisterCredentialHandler } from './application/register-credential/register-credential.handler.js';
 import { UpdatePersonHandler } from './application/update-person/update-person.handler.js';
 import { ValidateAccessTokenHandler } from './application/validate-access-token/validate-access-token.handler.js';
+import type { ValidateAccessTokenHandler as ValidateAccessTokenHandlerType } from './application/validate-access-token/validate-access-token.handler.js';
 import { registerAuthRoutes } from './contracts/api/auth.routes.js';
+import type { AuthRouteHandlers } from './contracts/api/auth.routes.js';
 import { registerPersonRoutes } from './contracts/api/person.routes.js';
+import type { PersonRouteHandlers } from './contracts/api/person.routes.js';
 import { Argon2PasswordHasher } from './infrastructure/cryptography/argon2-password-hasher.js';
 import { PrismaCredentialRepository } from './infrastructure/repositories/prisma-credential.repository.js';
 import { PrismaPersonRepository } from './infrastructure/repositories/prisma-person.repository.js';
 import { PrismaSessionRepository } from './infrastructure/repositories/prisma-session.repository.js';
 import { JoseTokenService } from './infrastructure/tokens/jose-token.service.js';
 
-function createIamDependencies(env: Env) {
+export interface IamDependencies {
+  personHandlers: PersonRouteHandlers;
+  authHandlers: Pick<AuthRouteHandlers, 'registerCredentialHandler'>;
+  sessionHandlers: {
+    authenticatePersonHandler: AuthRouteHandlers['authenticatePersonHandler'];
+    refreshSessionHandler: AuthRouteHandlers['refreshSessionHandler'];
+    logoutSessionHandler: AuthRouteHandlers['logoutSessionHandler'];
+    validateAccessTokenHandler: ValidateAccessTokenHandlerType;
+  };
+}
+
+export function createIamDependencies(env: Env): IamDependencies {
   const prisma = getPrismaClient();
   const personRepository = new PrismaPersonRepository(prisma);
   const credentialRepository = new PrismaCredentialRepository(prisma);
@@ -65,18 +79,15 @@ function createIamDependencies(env: Env) {
 
 export async function registerIamModule(
   app: FastifyInstance,
-  env: Env,
+  handlers: PersonRouteHandlers,
 ): Promise<void> {
-  const { personHandlers } = createIamDependencies(env);
-
-  await registerPersonRoutes(app, personHandlers);
+  await registerPersonRoutes(app, handlers);
 }
 
 export async function registerAuthModule(
   app: FastifyInstance,
   env: Env,
+  handlers: AuthRouteHandlers,
 ): Promise<void> {
-  const { authHandlers } = createIamDependencies(env);
-
-  await registerAuthRoutes(app, authHandlers);
+  await registerAuthRoutes(app, handlers, env);
 }

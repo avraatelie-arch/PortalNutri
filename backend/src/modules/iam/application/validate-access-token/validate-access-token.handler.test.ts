@@ -159,7 +159,7 @@ describe('ValidateAccessTokenHandler', () => {
       new InMemorySessionRepository(),
       tokenService,
     );
-    const accessToken = await tokenService.issueAccessToken({
+    const issued = await tokenService.issueAccessToken({
       personId: '550e8400-e29b-41d4-a716-446655440000',
       sessionId: '660e8400-e29b-41d4-a716-446655440099',
       tenantId: null,
@@ -167,7 +167,7 @@ describe('ValidateAccessTokenHandler', () => {
 
     await assert.rejects(
       validateHandler.execute(
-        new ValidateAccessTokenQuery({ accessToken }),
+        new ValidateAccessTokenQuery({ accessToken: issued.accessToken }),
       ),
       SessionNotFoundError,
     );
@@ -198,7 +198,7 @@ describe('ValidateAccessTokenHandler', () => {
       sessionRepository,
       tokenService,
     );
-    const accessToken = await tokenService.issueAccessToken({
+    const issued = await tokenService.issueAccessToken({
       personId: personId.toString(),
       sessionId: sessionId.toString(),
       tenantId: null,
@@ -206,7 +206,7 @@ describe('ValidateAccessTokenHandler', () => {
 
     await assert.rejects(
       validateHandler.execute(
-        new ValidateAccessTokenQuery({ accessToken }),
+        new ValidateAccessTokenQuery({ accessToken: issued.accessToken }),
       ),
       SessionRevokedError,
     );
@@ -237,7 +237,7 @@ describe('ValidateAccessTokenHandler', () => {
       sessionRepository,
       tokenService,
     );
-    const accessToken = await tokenService.issueAccessToken({
+    const issued = await tokenService.issueAccessToken({
       personId: personId.toString(),
       sessionId: sessionId.toString(),
       tenantId: null,
@@ -245,7 +245,7 @@ describe('ValidateAccessTokenHandler', () => {
 
     await assert.rejects(
       validateHandler.execute(
-        new ValidateAccessTokenQuery({ accessToken }),
+        new ValidateAccessTokenQuery({ accessToken: issued.accessToken }),
       ),
       SessionExpiredError,
     );

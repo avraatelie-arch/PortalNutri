@@ -23,5 +23,14 @@ export function buildOpenApiConfig(env: Env) {
         description: 'Identity and Access Management',
       },
     ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http' as const,
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
   };
 }

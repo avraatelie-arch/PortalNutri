@@ -133,6 +133,19 @@ const envSchema = z
       .string()
       .min(1, 'JWT_SESSION_TTL must be a non-empty string')
       .default('30d'),
+    AUTH_CREDENTIAL_REGISTRATION_ENABLED: booleanEnvSchema
+      .optional()
+      .transform((value) => {
+        if (value === 'true') {
+          return true;
+        }
+
+        if (value === 'false') {
+          return false;
+        }
+
+        return undefined;
+      }),
   })
   .superRefine((data, ctx) => {
     const minJwtSecretLength = data.NODE_ENV === 'production' ? 64 : 32;
@@ -183,6 +196,9 @@ const envSchema = z
       OPENAPI_ENABLED:
         data.OPENAPI_ENABLED ?? data.NODE_ENV !== 'production',
       LOG_PRETTY: data.LOG_PRETTY ?? data.NODE_ENV === 'development',
+      AUTH_CREDENTIAL_REGISTRATION_ENABLED:
+        data.AUTH_CREDENTIAL_REGISTRATION_ENABLED ??
+        data.NODE_ENV !== 'production',
       corsOrigins,
     };
   });

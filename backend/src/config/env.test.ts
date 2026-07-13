@@ -54,6 +54,7 @@ describe('parseEnv', () => {
     assert.equal(env.LOG_LEVEL, 'info');
     assert.equal(env.LOG_PRETTY, true);
     assert.equal(env.OPENAPI_ENABLED, true);
+    assert.equal(env.AUTH_CREDENTIAL_REGISTRATION_ENABLED, true);
   });
 
   it('fails when DATABASE_URL is missing', () => {
@@ -167,5 +168,17 @@ describe('parseEnv', () => {
       }),
       'JWT_SECRET must be at least 64 characters in production',
     );
+  });
+
+  it('defaults AUTH_CREDENTIAL_REGISTRATION_ENABLED to false in production', () => {
+    const env = parseEnv(
+      validEnv({
+        NODE_ENV: 'production',
+        CORS_ORIGIN: 'https://app.example.com',
+        JWT_SECRET: 'a'.repeat(64),
+      }),
+    );
+
+    assert.equal(env.AUTH_CREDENTIAL_REGISTRATION_ENABLED, false);
   });
 });

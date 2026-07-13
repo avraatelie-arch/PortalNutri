@@ -69,7 +69,7 @@ export class AuthenticatePersonHandler {
 
       await this.sessionRepository.save(session);
 
-      const accessToken = await this.tokenService.issueAccessToken({
+      const issuedAccessToken = await this.tokenService.issueAccessToken({
         personId: person.getId().toString(),
         sessionId: session.getId().toString(),
         tenantId: null,
@@ -87,7 +87,12 @@ export class AuthenticatePersonHandler {
 
       session.pullDomainEvents();
 
-      return AuthenticatePersonResponse.from(accessToken, refreshToken);
+      return AuthenticatePersonResponse.from(
+        issuedAccessToken.accessToken,
+        refreshToken,
+        issuedAccessToken.accessTokenExpiresAt,
+        session.getId().toString(),
+      );
     });
   }
 }
