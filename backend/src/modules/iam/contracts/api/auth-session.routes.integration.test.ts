@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, it } from 'node:test';
 import type { FastifyInstance } from 'fastify';
-import { UNAUTHORIZED_MESSAGE } from '../../../../bootstrap/auth/unauthorized-response.js';
+import { UNAUTHORIZED_MESSAGE } from '../../application/authentication/unauthorized-response.js';
 import {
   createAuthHttpTestApp,
   createAuthHttpTestAppWithEnv,

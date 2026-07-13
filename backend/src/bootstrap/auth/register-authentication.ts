@@ -4,7 +4,7 @@ import { ValidateAccessTokenQuery } from '../../modules/iam/application/validate
 import type { ValidateAccessTokenHandler } from '../../modules/iam/application/validate-access-token/validate-access-token.handler.js';
 import { extractBearerToken } from './extract-bearer-token.js';
 import { isPublicRoute } from './public-routes.js';
-import { buildUnauthorizedResponse } from './unauthorized-response.js';
+import { buildUnauthorizedResponse } from '../../modules/iam/application/authentication/unauthorized-response.js';
 
 export function registerAuthentication(
   app: FastifyInstance,

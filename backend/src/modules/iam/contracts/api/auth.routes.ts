@@ -4,7 +4,7 @@ import type { AuthenticatePersonHandler } from '../../application/authenticate-p
 import type { LogoutSessionHandler } from '../../application/logout-session/logout-session.handler.js';
 import type { RefreshSessionHandler } from '../../application/refresh-session/refresh-session.handler.js';
 import type { RegisterCredentialHandler } from '../../application/register-credential/register-credential.handler.js';
-import { buildUnauthorizedResponse } from '../../../../bootstrap/auth/unauthorized-response.js';
+import { buildUnauthorizedResponse } from '../../application/authentication/unauthorized-response.js';
 import {
   toAuthenticatePersonCommand,
   toAuthTokenHttpResponse,

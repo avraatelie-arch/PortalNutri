@@ -6,7 +6,7 @@ import { PersonInactiveError } from '../../application/errors/person-inactive.er
 import { SessionExpiredError } from '../../application/errors/session-expired.error.js';
 import { SessionNotFoundError } from '../../application/errors/session-not-found.error.js';
 import { SessionRevokedError } from '../../application/errors/session-revoked.error.js';
-import { UNAUTHORIZED_MESSAGE } from '../../../../bootstrap/auth/unauthorized-response.js';
+import { UNAUTHORIZED_MESSAGE } from '../../application/authentication/unauthorized-response.js';
 import { mapApplicationErrorToHttp } from './map-application-error.js';
 
 function isAuthenticationFailure(error: unknown): boolean {

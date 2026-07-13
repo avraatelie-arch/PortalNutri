@@ -6,7 +6,7 @@ import { InvalidRefreshTokenError } from '../../application/errors/invalid-refre
 import { PersonInactiveError } from '../../application/errors/person-inactive.error.js';
 import { PersonNotFoundError } from '../../application/errors/person-not-found.error.js';
 import { SessionRevokedError } from '../../application/errors/session-revoked.error.js';
-import { UNAUTHORIZED_MESSAGE } from '../../../../bootstrap/auth/unauthorized-response.js';
+import { UNAUTHORIZED_MESSAGE } from '../../application/authentication/unauthorized-response.js';
 import { mapAuthErrorToHttp } from './map-auth-error.js';
 
 describe('mapAuthErrorToHttp', () => {

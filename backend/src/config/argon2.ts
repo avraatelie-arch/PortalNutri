@@ -1,5 +1,10 @@
 import type { Env } from './env.js';
-import type { Argon2Config } from '../modules/iam/infrastructure/cryptography/argon2-password-hasher.js';
+
+export interface Argon2Config {
+  timeCost: number;
+  memoryCost: number;
+  parallelism: number;
+}
 
 export function buildArgon2Config(env: Env): Argon2Config {
   return {
