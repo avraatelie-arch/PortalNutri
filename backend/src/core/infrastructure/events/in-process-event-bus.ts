@@ -10,25 +10,37 @@ export class InProcessEventBus implements EventPublisher {
   ) {}
 
   async publish(event: PlatformEvent): Promise<void> {
-    const handlers = this.registry.getHandlers(event.eventName);
+    const eventSpecificHandlers = this.registry.getHandlers(event.eventName);
+    const globalHandlers = this.registry.getGlobalHandlers();
 
-    for (const handler of handlers) {
-      try {
-        await handler.handle(event);
-      }
-      catch (error) {
-        this.logger.logHandlerFailure({
-          eventName: event.eventName,
-          handlerName: handler.handlerName,
-          error,
-        });
-      }
+    for (const handler of eventSpecificHandlers) {
+      await this.invokeHandler(event, handler);
+    }
+
+    for (const handler of globalHandlers) {
+      await this.invokeHandler(event, handler);
     }
   }
 
   async publishAll(events: readonly PlatformEvent[]): Promise<void> {
     for (const event of events) {
       await this.publish(event);
+    }
+  }
+
+  private async invokeHandler(
+    event: PlatformEvent,
+    handler: { readonly handlerName: string; handle(event: PlatformEvent): Promise<void> },
+  ): Promise<void> {
+    try {
+      await handler.handle(event);
+    }
+    catch (error) {
+      this.logger.logHandlerFailure({
+        eventName: event.eventName,
+        handlerName: handler.handlerName,
+        error,
+      });
     }
   }
 }

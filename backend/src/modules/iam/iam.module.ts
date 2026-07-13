@@ -25,6 +25,10 @@ import { JoseTokenService } from './infrastructure/tokens/jose-token.service.js'
 import { DefaultAuthorizationService } from './infrastructure/authorization/default-authorization.service.js';
 import type { AuthorizationService } from './application/authorization/authorization.service.js';
 import { EventDispatcher } from '../../core/application/events/event-dispatcher.js';
+import { AuditEventHandler } from '../../core/infrastructure/audit/audit-event-handler.js';
+import { DefaultAuditLogger } from '../../core/infrastructure/audit/default-audit-logger.js';
+import { DefaultAuditPublisher } from '../../core/infrastructure/audit/default-audit-publisher.js';
+import { InMemoryAuditSink } from '../../core/infrastructure/audit/in-memory-audit-sink.js';
 import { EventHandlerRegistry } from '../../core/infrastructure/events/event-handler-registry.js';
 import { InProcessEventBus } from '../../core/infrastructure/events/in-process-event-bus.js';
 import { DefaultEventBusLogger } from '../../core/infrastructure/events/default-event-bus-logger.js';
@@ -50,6 +54,13 @@ export function createIamDependencies(env: Env): IamDependencies {
   const passwordHasher = new Argon2PasswordHasher(buildArgon2Config(env));
   const tokenService = new JoseTokenService(buildJwtConfig(env));
   const eventHandlerRegistry = new EventHandlerRegistry();
+  const auditPublisher = new DefaultAuditPublisher(
+    new InMemoryAuditSink(),
+    new DefaultAuditLogger(),
+  );
+
+  eventHandlerRegistry.registerGlobal(new AuditEventHandler(auditPublisher));
+
   const eventDispatcher = new EventDispatcher(
     new InProcessEventBus(eventHandlerRegistry, new DefaultEventBusLogger()),
   );

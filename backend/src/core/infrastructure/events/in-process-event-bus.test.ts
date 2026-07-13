@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import type { AuditEntry } from '../../application/audit/audit-entry.js';
+import type { AuditLogger } from '../../application/audit/audit-logger.js';
+import type { AuditSink } from '../../application/audit/audit-sink.js';
 import type { EventBusLogger } from '../../application/events/event-bus-logger.js';
 import type { EventHandler } from '../../application/events/event-handler.js';
 import type { PlatformEvent } from '../../application/events/platform-event.js';
+import { AuditEventHandler } from '../audit/audit-event-handler.js';
+import { DefaultAuditPublisher } from '../audit/default-audit-publisher.js';
+import { InMemoryAuditSink } from '../audit/in-memory-audit-sink.js';
 import { EventHandlerRegistry } from './event-handler-registry.js';
 import { InProcessEventBus } from './in-process-event-bus.js';
 
@@ -26,6 +32,24 @@ class RecordingLogger implements EventBusLogger {
     error: unknown;
   }): void {
     this.failures.push(params);
+  }
+}
+
+class RecordingAuditLogger implements AuditLogger {
+  failures: Array<{ eventName: string; error: unknown }> = [];
+
+  logAuditFailure(params: { eventName: string; error: unknown }): void {
+    this.failures.push(params);
+  }
+}
+
+class FailingAuditSink implements AuditSink {
+  shouldFail = false;
+
+  async save(_entry: AuditEntry): Promise<void> {
+    if (this.shouldFail) {
+      throw new Error('audit sink failed');
+    }
   }
 }
 
@@ -210,5 +234,121 @@ describe('InProcessEventBus', () => {
     ]);
 
     assert.deepEqual(calls, ['one', 'two']);
+  });
+
+  it('invokes global handlers after event-specific handlers', async () => {
+    const registry = new EventHandlerRegistry();
+    const bus = new InProcessEventBus(registry, new RecordingLogger());
+    const calls: string[] = [];
+
+    registry.register('OrderedEvent', {
+      handlerName: 'specific-handler',
+      async handle() {
+        calls.push('specific');
+      },
+    });
+    registry.registerGlobal({
+      handlerName: 'global-handler',
+      async handle() {
+        calls.push('global');
+      },
+    });
+
+    await bus.publish(new TestEvent('OrderedEvent'));
+
+    assert.deepEqual(calls, ['specific', 'global']);
+  });
+
+  it('invokes global handlers when no event-specific handlers exist', async () => {
+    const registry = new EventHandlerRegistry();
+    const bus = new InProcessEventBus(registry, new RecordingLogger());
+    let globalHandled = false;
+
+    registry.registerGlobal({
+      handlerName: 'global-only',
+      async handle() {
+        globalHandled = true;
+      },
+    });
+
+    await bus.publish(new TestEvent('UnhandledEvent'));
+
+    assert.equal(globalHandled, true);
+  });
+
+  it('routes every platform event to global audit handler after dispatch', async () => {
+    const registry = new EventHandlerRegistry();
+    const bus = new InProcessEventBus(registry, new RecordingLogger());
+    const sink = new InMemoryAuditSink();
+    const calls: string[] = [];
+
+    registry.register('AuditedEvent', {
+      handlerName: 'business-handler',
+      async handle() {
+        calls.push('business');
+      },
+    });
+    registry.registerGlobal(
+      new AuditEventHandler(
+        new DefaultAuditPublisher(sink, new RecordingAuditLogger()),
+      ),
+    );
+
+    await bus.publishAll([
+      new TestEvent('AuditedEvent'),
+      new TestEvent('OnlyGlobalEvent'),
+    ]);
+
+    assert.deepEqual(calls, ['business']);
+    assert.equal(sink.getEntries().length, 2);
+    assert.equal(sink.getEntries()[0]?.eventName, 'AuditedEvent');
+    assert.equal(sink.getEntries()[1]?.eventName, 'OnlyGlobalEvent');
+  });
+
+  it('continues later events when audit recording fails', async () => {
+    const registry = new EventHandlerRegistry();
+    const bus = new InProcessEventBus(registry, new RecordingLogger());
+    const sink = new FailingAuditSink();
+    const logger = new RecordingAuditLogger();
+
+    sink.shouldFail = true;
+
+    registry.registerGlobal(
+      new AuditEventHandler(new DefaultAuditPublisher(sink, logger)),
+    );
+
+    await bus.publishAll([
+      new TestEvent('FirstEvent'),
+      new TestEvent('SecondEvent'),
+    ]);
+
+    assert.equal(logger.failures.length, 2);
+    assert.equal(logger.failures[0]?.eventName, 'FirstEvent');
+    assert.equal(logger.failures[1]?.eventName, 'SecondEvent');
+  });
+
+  it('continues global handlers after a failing event-specific handler', async () => {
+    const registry = new EventHandlerRegistry();
+    const bus = new InProcessEventBus(registry, new RecordingLogger());
+    const sink = new InMemoryAuditSink();
+    const calls: string[] = [];
+
+    registry.register('FailureEvent', {
+      handlerName: 'failing-business-handler',
+      async handle() {
+        calls.push('business');
+        throw new Error('business failed');
+      },
+    });
+    registry.registerGlobal(
+      new AuditEventHandler(
+        new DefaultAuditPublisher(sink, new RecordingAuditLogger()),
+      ),
+    );
+
+    await bus.publish(new TestEvent('FailureEvent'));
+
+    assert.deepEqual(calls, ['business']);
+    assert.equal(sink.getEntries().length, 1);
   });
 });

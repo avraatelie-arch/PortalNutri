@@ -12,19 +12,14 @@ class TestEvent implements PlatformEvent {
 describe('EventHandlerRegistry', () => {
   it('returns handlers in registration order', () => {
     const registry = new EventHandlerRegistry();
-    const calls: string[] = [];
 
     const first: EventHandler = {
       handlerName: 'first',
-      async handle() {
-        calls.push('first');
-      },
+      async handle() {},
     };
     const second: EventHandler = {
       handlerName: 'second',
-      async handle() {
-        calls.push('second');
-      },
+      async handle() {},
     };
 
     registry.register('TestEvent', first);
@@ -41,5 +36,43 @@ describe('EventHandlerRegistry', () => {
     const registry = new EventHandlerRegistry();
 
     assert.deepEqual(registry.getHandlers('MissingEvent'), []);
+  });
+
+  it('returns global handlers in registration order', () => {
+    const registry = new EventHandlerRegistry();
+
+    const first: EventHandler = {
+      handlerName: 'global-first',
+      async handle() {},
+    };
+    const second: EventHandler = {
+      handlerName: 'global-second',
+      async handle() {},
+    };
+
+    registry.registerGlobal(first);
+    registry.registerGlobal(second);
+
+    const handlers = registry.getGlobalHandlers();
+
+    assert.equal(handlers.length, 2);
+    assert.equal(handlers[0]?.handlerName, 'global-first');
+    assert.equal(handlers[1]?.handlerName, 'global-second');
+  });
+
+  it('keeps event-specific and global handlers separate', () => {
+    const registry = new EventHandlerRegistry();
+
+    registry.register('TestEvent', {
+      handlerName: 'specific',
+      async handle() {},
+    });
+    registry.registerGlobal({
+      handlerName: 'global',
+      async handle() {},
+    });
+
+    assert.equal(registry.getHandlers('TestEvent').length, 1);
+    assert.equal(registry.getGlobalHandlers().length, 1);
   });
 });
