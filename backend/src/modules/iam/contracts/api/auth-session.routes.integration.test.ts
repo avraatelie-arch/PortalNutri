@@ -82,6 +82,38 @@ describe('Auth HTTP routes (integration)', () => {
       assert.match(body.sessionId ?? '', /^[0-9a-f-]{36}$/i);
     });
 
+    it('does not expose domain or application events in the login response', async () => {
+      const seeded = await seedPersonFixture({
+        email: 'login.no-events@example.com',
+        documentValue: 'LOGIN099',
+      });
+
+      await registerCredentialForPerson(app, seeded.personId, 'SecureP@ssw0rd');
+
+      const response = await injectJson(app, {
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: {
+          email: seeded.email,
+          password: 'SecureP@ssw0rd',
+        },
+      });
+
+      assert.equal(response.statusCode, 200);
+
+      const body = response.body as Record<string, unknown>;
+
+      assert.deepEqual(Object.keys(body).sort(), [
+        'accessToken',
+        'expiresAt',
+        'refreshToken',
+        'sessionId',
+      ]);
+      assert.equal('eventName' in body, false);
+      assert.equal('occurredAt' in body, false);
+      assert.equal('events' in body, false);
+    });
+
     it('returns 401 for wrong password', async () => {
       const seeded = await seedPersonFixture({
         email: 'login.wrong-password@example.com',

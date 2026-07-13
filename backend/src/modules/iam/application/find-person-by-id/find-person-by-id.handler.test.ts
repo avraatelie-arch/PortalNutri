@@ -7,6 +7,7 @@ import { CreatePersonHandler } from '../create-person/create-person.handler.js';
 import { PersonNotFoundError } from '../errors/person-not-found.error.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
 import { InMemoryPersonRepository } from '../../infrastructure/repositories/in-memory-person.repository.js';
+import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 import { FindPersonByIdHandler } from './find-person-by-id.handler.js';
 import { FindPersonByIdQuery } from './find-person-by-id.query.js';
 
@@ -16,7 +17,7 @@ async function seedPerson(
   overrides: Partial<CreatePersonCommand['request']> = {},
   repository = new InMemoryPersonRepository(),
 ) {
-  const createHandler = new CreatePersonHandler(repository);
+  const createHandler = new CreatePersonHandler(repository, noopEventDispatcher);
 
   const created = await createHandler.execute(
     new CreatePersonCommand({

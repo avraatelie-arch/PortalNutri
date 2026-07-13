@@ -16,6 +16,7 @@ import { PrismaCredentialRepository } from './prisma-credential.repository.js';
 import { PrismaPersonRepository } from './prisma-person.repository.js';
 import { PrismaSessionRepository } from './prisma-session.repository.js';
 import { createTestJwtConfig } from '../../../../test-support/jwt-test.config.js';
+import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 
 requireDatabaseUrl();
 
@@ -47,7 +48,7 @@ describe('PrismaSessionRepository (integration)', () => {
   });
 
   it('persists and finds a session by id', async () => {
-    const createHandler = new CreatePersonHandler(personRepository);
+    const createHandler = new CreatePersonHandler(personRepository, noopEventDispatcher);
     const registerHandler = new RegisterCredentialHandler(
       personRepository,
       credentialRepository,
@@ -59,6 +60,7 @@ describe('PrismaSessionRepository (integration)', () => {
       sessionRepository,
       passwordHasher,
       tokenService,
+      noopEventDispatcher,
     );
 
     const created = await createHandler.execute(

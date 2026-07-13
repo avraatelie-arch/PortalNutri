@@ -3,6 +3,7 @@ import type { TokenService } from '../services/token-service.port.js';
 import { RefreshTokenHash } from '../../domain/value-objects/refresh-token-hash.js';
 import { SessionId } from '../../domain/value-objects/session-id.js';
 import { executeUseCase } from '../execute-use-case.js';
+import type { EventDispatcher } from '../../../../core/application/events/event-dispatcher.js';
 import { InvalidRefreshTokenError } from '../errors/invalid-refresh-token.error.js';
 import { SessionNotFoundError } from '../errors/session-not-found.error.js';
 import {
@@ -15,6 +16,7 @@ export class RefreshSessionHandler {
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly tokenService: TokenService,
+    private readonly eventDispatcher: EventDispatcher,
   ) {}
 
   async execute(
@@ -43,7 +45,7 @@ export class RefreshSessionHandler {
       if (session.getRefreshTokenHash().toString() !== presentedHash) {
         session.revoke();
         await this.sessionRepository.save(session);
-        session.pullDomainEvents();
+        await this.eventDispatcher.dispatch(session.pullDomainEvents());
         throw new InvalidRefreshTokenError();
       }
 
@@ -72,7 +74,7 @@ export class RefreshSessionHandler {
         nextRefreshSecret,
       );
 
-      session.pullDomainEvents();
+      await this.eventDispatcher.dispatch(session.pullDomainEvents());
 
       return RefreshSessionResponse.from(
         issuedAccessToken.accessToken,

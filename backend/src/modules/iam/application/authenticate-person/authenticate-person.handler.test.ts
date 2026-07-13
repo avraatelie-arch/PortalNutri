@@ -20,6 +20,9 @@ import { InMemoryPersonRepository } from '../../infrastructure/repositories/in-m
 import { InMemorySessionRepository } from '../../infrastructure/repositories/in-memory-session.repository.js';
 import { JoseTokenService } from '../../infrastructure/tokens/jose-token.service.js';
 import { createTestJwtConfig } from '../../../../test-support/jwt-test.config.js';
+import { AuthenticationSucceeded } from '../events/authentication-succeeded.event.js';
+import { CapturingEventDispatcher } from '../../../../test-support/capturing-event-dispatcher.js';
+import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 import { AuthenticatePersonCommand } from './authenticate-person.command.js';
 import { AuthenticatePersonHandler } from './authenticate-person.handler.js';
 
@@ -39,7 +42,7 @@ async function seedPersonWithCredential(
 ) {
   const personRepository = new InMemoryPersonRepository();
   const credentialRepository = new InMemoryCredentialRepository();
-  const createHandler = new CreatePersonHandler(personRepository);
+  const createHandler = new CreatePersonHandler(personRepository, noopEventDispatcher);
   const created = await createHandler.execute(
     new CreatePersonCommand({
       fullName: 'Maria Silva',
@@ -75,6 +78,7 @@ function createHandler(
   personRepository: InMemoryPersonRepository,
   credentialRepository: InMemoryCredentialRepository,
   sessionRepository = new InMemorySessionRepository(),
+  eventDispatcher = noopEventDispatcher,
 ) {
   const tokenService = new JoseTokenService(createTestJwtConfig());
 
@@ -84,6 +88,7 @@ function createHandler(
     sessionRepository,
     new FakePasswordHasher(),
     tokenService,
+    eventDispatcher,
   );
 }
 
@@ -150,7 +155,7 @@ describe('AuthenticatePersonHandler', () => {
   it('rejects inactive person', async () => {
     const { personRepository, credentialRepository, created } =
       await seedPersonWithCredential();
-    const deactivateHandler = new DeactivatePersonHandler(personRepository);
+    const deactivateHandler = new DeactivatePersonHandler(personRepository, noopEventDispatcher);
     await deactivateHandler.execute(new DeactivatePersonCommand(created.id));
 
     const handler = createHandler(personRepository, credentialRepository);
@@ -221,5 +226,65 @@ describe('AuthenticatePersonHandler', () => {
     );
 
     assert.ok(session);
+  });
+
+  it('dispatches session domain events and AuthenticationSucceeded after save', async () => {
+    const { personRepository, credentialRepository, created, password } =
+      await seedPersonWithCredential();
+    const eventDispatcher = new CapturingEventDispatcher();
+    const handler = createHandler(
+      personRepository,
+      credentialRepository,
+      new InMemorySessionRepository(),
+      eventDispatcher,
+    );
+
+    await handler.execute(
+      new AuthenticatePersonCommand({
+        email: 'maria.silva@example.com',
+        password,
+      }),
+    );
+
+    assert.equal(eventDispatcher.dispatched.length, 1);
+    const dispatchedEvents = eventDispatcher.dispatched[0] ?? [];
+    assert.equal(dispatchedEvents.length, 2);
+    assert.equal(
+      (dispatchedEvents[0] as { eventName: string }).eventName,
+      'SessionCreated',
+    );
+    assert.ok(dispatchedEvents[1] instanceof AuthenticationSucceeded);
+    assert.equal(
+      (dispatchedEvents[1] as AuthenticationSucceeded).personId,
+      created.id,
+    );
+  });
+
+  it('does not expose domain or application events in the response', async () => {
+    const { personRepository, credentialRepository, password } =
+      await seedPersonWithCredential();
+    const eventDispatcher = new CapturingEventDispatcher();
+    const handler = createHandler(
+      personRepository,
+      credentialRepository,
+      new InMemorySessionRepository(),
+      eventDispatcher,
+    );
+
+    const response = await handler.execute(
+      new AuthenticatePersonCommand({
+        email: 'maria.silva@example.com',
+        password,
+      }),
+    );
+
+    assert.deepEqual(Object.keys(response).sort(), [
+      'accessToken',
+      'accessTokenExpiresAt',
+      'refreshToken',
+      'sessionId',
+    ]);
+    assert.equal('eventName' in response, false);
+    assert.equal('occurredAt' in response, false);
   });
 });

@@ -27,6 +27,7 @@ import {
   createTestJwtConfig,
   TEST_JWT_SECRET,
 } from '../../../../test-support/jwt-test.config.js';
+import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 import { ValidateAccessTokenQuery } from './validate-access-token.query.js';
 import { ValidateAccessTokenHandler } from './validate-access-token.handler.js';
 
@@ -47,7 +48,7 @@ async function login() {
   const tokenService = new JoseTokenService(createTestJwtConfig());
   const password = 'SecureP@ssw0rd';
 
-  const createHandler = new CreatePersonHandler(personRepository);
+  const createHandler = new CreatePersonHandler(personRepository, noopEventDispatcher);
   const created = await createHandler.execute(
     new CreatePersonCommand({
       fullName: 'Maria Silva',
@@ -77,6 +78,7 @@ async function login() {
     sessionRepository,
     new FakePasswordHasher(),
     tokenService,
+    noopEventDispatcher,
   );
 
   const authenticated = await authenticateHandler.execute(

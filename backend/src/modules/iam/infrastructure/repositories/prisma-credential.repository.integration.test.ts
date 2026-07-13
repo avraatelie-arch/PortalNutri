@@ -12,6 +12,7 @@ import { PersonId } from '../../domain/value-objects/person-id.js';
 import { Argon2PasswordHasher } from '../cryptography/argon2-password-hasher.js';
 import { PrismaCredentialRepository } from './prisma-credential.repository.js';
 import { PrismaPersonRepository } from './prisma-person.repository.js';
+import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 
 requireDatabaseUrl();
 
@@ -41,7 +42,7 @@ describe('PrismaCredentialRepository (integration)', () => {
   });
 
   it('persists and finds a credential by person id', async () => {
-    const createHandler = new CreatePersonHandler(personRepository);
+    const createHandler = new CreatePersonHandler(personRepository, noopEventDispatcher);
     const registerHandler = new RegisterCredentialHandler(
       personRepository,
       credentialRepository,

@@ -8,10 +8,13 @@ import { PersonValidationError } from '../errors/person-validation.error.js';
 import { CreatePersonCommand } from './create-person.command.js';
 import { CreatePersonHandler } from './create-person.handler.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
+import type { PersonRepository } from '../../domain/repositories/person-repository.js';
 import { InMemoryPersonRepository } from '../../infrastructure/repositories/in-memory-person.repository.js';
+import { CapturingEventDispatcher } from '../../../../test-support/capturing-event-dispatcher.js';
+import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 
 function createHandler() {
-  return new CreatePersonHandler(new InMemoryPersonRepository());
+  return new CreatePersonHandler(new InMemoryPersonRepository(), noopEventDispatcher);
 }
 
 function createValidCommand(
@@ -57,7 +60,7 @@ describe('CreatePersonHandler', () => {
 
   it('persists the created person in repository', async () => {
     const repository = new InMemoryPersonRepository();
-    const handler = new CreatePersonHandler(repository);
+    const handler = new CreatePersonHandler(repository, noopEventDispatcher);
 
     const response = await handler.execute(createValidCommand());
     const saved = await repository.findById(PersonId.create(response.id));
@@ -126,5 +129,59 @@ describe('CreatePersonHandler', () => {
         ),
       PersonValidationError,
     );
+  });
+
+  it('dispatches domain events only after successful persistence', async () => {
+    const eventDispatcher = new CapturingEventDispatcher();
+    const handler = new CreatePersonHandler(
+      new InMemoryPersonRepository(),
+      eventDispatcher,
+    );
+
+    const response = await handler.execute(createValidCommand());
+
+    assert.equal(eventDispatcher.dispatched.length, 1);
+    const dispatchedEvents = eventDispatcher.dispatched[0] ?? [];
+    assert.equal(dispatchedEvents.length, 1);
+    assert.equal(
+      (dispatchedEvents[0] as { eventName: string }).eventName,
+      'PersonCreated',
+    );
+    assert.equal(response.id.length > 0, true);
+    assert.equal('eventName' in response, false);
+  });
+
+  it('does not dispatch events when persistence fails', async () => {
+    const eventDispatcher = new CapturingEventDispatcher();
+    const failingRepository: PersonRepository = {
+      async save() {
+        throw new Error('persistence failed');
+      },
+      async findById() {
+        return null;
+      },
+      async findByEmail() {
+        return null;
+      },
+      async findByDocument() {
+        return null;
+      },
+      async existsByEmail() {
+        return false;
+      },
+      async existsByDocument() {
+        return false;
+      },
+    };
+    const handler = new CreatePersonHandler(
+      failingRepository,
+      eventDispatcher,
+    );
+
+    await assert.rejects(
+      () => handler.execute(createValidCommand()),
+      /persistence failed/,
+    );
+    assert.equal(eventDispatcher.dispatched.length, 0);
   });
 });

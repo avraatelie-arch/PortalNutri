@@ -8,6 +8,7 @@ import { Email } from '../../domain/value-objects/email.js';
 import { RefreshTokenFamilyId } from '../../domain/value-objects/refresh-token-family-id.js';
 import { RefreshTokenHash } from '../../domain/value-objects/refresh-token-hash.js';
 import { executeUseCase } from '../execute-use-case.js';
+import type { EventDispatcher } from '../../../../core/application/events/event-dispatcher.js';
 import { AuthenticationSucceeded } from '../events/authentication-succeeded.event.js';
 import { InvalidCredentialsError } from '../errors/invalid-credentials.error.js';
 import { AuthenticatePersonCommand } from './authenticate-person.command.js';
@@ -20,6 +21,7 @@ export class AuthenticatePersonHandler {
     private readonly sessionRepository: SessionRepository,
     private readonly passwordHasher: PasswordHasher,
     private readonly tokenService: TokenService,
+    private readonly eventDispatcher: EventDispatcher,
   ) {}
 
   async execute(
@@ -80,12 +82,15 @@ export class AuthenticatePersonHandler {
         refreshSecret,
       );
 
-      new AuthenticationSucceeded(
+      const authenticationSucceeded = new AuthenticationSucceeded(
         person.getId().toString(),
         session.getId().toString(),
       );
 
-      session.pullDomainEvents();
+      await this.eventDispatcher.dispatch([
+        ...session.pullDomainEvents(),
+        authenticationSucceeded,
+      ]);
 
       return AuthenticatePersonResponse.from(
         issuedAccessToken.accessToken,

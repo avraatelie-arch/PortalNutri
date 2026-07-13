@@ -13,6 +13,7 @@ import { Document } from '../../domain/value-objects/document.js';
 import { Email } from '../../domain/value-objects/email.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
 import { PersonStatus } from '../../domain/value-objects/person-status.js';
+import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 import { PrismaPersonRepository } from './prisma-person.repository.js';
 
 requireDatabaseUrl();
@@ -37,7 +38,7 @@ describe('PrismaPersonRepository (integration)', () => {
   });
 
   it('persists and finds a person by id', async () => {
-    const createHandler = new CreatePersonHandler(repository);
+    const createHandler = new CreatePersonHandler(repository, noopEventDispatcher);
 
     const created = await createHandler.execute(
       new CreatePersonCommand({
@@ -62,7 +63,7 @@ describe('PrismaPersonRepository (integration)', () => {
   });
 
   it('finds a person by email', async () => {
-    const createHandler = new CreatePersonHandler(repository);
+    const createHandler = new CreatePersonHandler(repository, noopEventDispatcher);
 
     const created = await createHandler.execute(
       new CreatePersonCommand({
@@ -83,7 +84,7 @@ describe('PrismaPersonRepository (integration)', () => {
   });
 
   it('finds a person by document', async () => {
-    const createHandler = new CreatePersonHandler(repository);
+    const createHandler = new CreatePersonHandler(repository, noopEventDispatcher);
 
     const created = await createHandler.execute(
       new CreatePersonCommand({
@@ -104,7 +105,7 @@ describe('PrismaPersonRepository (integration)', () => {
   });
 
   it('reports existence by email and document', async () => {
-    const createHandler = new CreatePersonHandler(repository);
+    const createHandler = new CreatePersonHandler(repository, noopEventDispatcher);
 
     await createHandler.execute(
       new CreatePersonCommand({
@@ -139,8 +140,8 @@ describe('PrismaPersonRepository (integration)', () => {
   });
 
   it('persists updates', async () => {
-    const createHandler = new CreatePersonHandler(repository);
-    const updateHandler = new UpdatePersonHandler(repository);
+    const createHandler = new CreatePersonHandler(repository, noopEventDispatcher);
+    const updateHandler = new UpdatePersonHandler(repository, noopEventDispatcher);
 
     const created = await createHandler.execute(
       new CreatePersonCommand({
@@ -176,8 +177,8 @@ describe('PrismaPersonRepository (integration)', () => {
   });
 
   it('persists deactivation status', async () => {
-    const createHandler = new CreatePersonHandler(repository);
-    const deactivateHandler = new DeactivatePersonHandler(repository);
+    const createHandler = new CreatePersonHandler(repository, noopEventDispatcher);
+    const deactivateHandler = new DeactivatePersonHandler(repository, noopEventDispatcher);
 
     const created = await createHandler.execute(
       new CreatePersonCommand({

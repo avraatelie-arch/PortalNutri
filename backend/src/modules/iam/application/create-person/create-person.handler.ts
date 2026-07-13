@@ -8,13 +8,17 @@ import { Person } from '../../domain/aggregates/person.aggregate.js';
 import { Phone } from '../../domain/value-objects/phone.js';
 import { PreferredName } from '../../domain/value-objects/preferred-name.js';
 import { executeUseCase } from '../execute-use-case.js';
+import type { EventDispatcher } from '../../../../core/application/events/event-dispatcher.js';
 import { PersonDocumentAlreadyExistsError } from '../errors/person-document-already-exists.error.js';
 import { PersonEmailAlreadyExistsError } from '../errors/person-email-already-exists.error.js';
 import { CreatePersonCommand } from './create-person.command.js';
 import { CreatePersonResponse } from './create-person.response.js';
 
 export class CreatePersonHandler {
-  constructor(private readonly personRepository: PersonRepository) {}
+  constructor(
+    private readonly personRepository: PersonRepository,
+    private readonly eventDispatcher: EventDispatcher,
+  ) {}
 
   async execute(command: CreatePersonCommand): Promise<CreatePersonResponse> {
     return executeUseCase(async () => {
@@ -49,7 +53,7 @@ export class CreatePersonHandler {
       });
 
       await this.personRepository.save(person);
-      person.pullDomainEvents();
+      await this.eventDispatcher.dispatch(person.pullDomainEvents());
 
       return CreatePersonResponse.from(person);
     });

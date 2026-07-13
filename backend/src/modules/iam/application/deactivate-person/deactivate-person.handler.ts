@@ -1,12 +1,16 @@
 import type { PersonRepository } from '../../domain/repositories/person-repository.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
 import { executeUseCase } from '../execute-use-case.js';
+import type { EventDispatcher } from '../../../../core/application/events/event-dispatcher.js';
 import { PersonNotFoundError } from '../errors/person-not-found.error.js';
 import { DeactivatePersonCommand } from './deactivate-person.command.js';
 import { toDeactivatePersonResult } from './deactivate-person.result.js';
 
 export class DeactivatePersonHandler {
-  constructor(private readonly personRepository: PersonRepository) {}
+  constructor(
+    private readonly personRepository: PersonRepository,
+    private readonly eventDispatcher: EventDispatcher,
+  ) {}
 
   async execute(command: DeactivatePersonCommand) {
     return executeUseCase(async () => {
@@ -20,7 +24,7 @@ export class DeactivatePersonHandler {
 
       person.deactivate();
       await this.personRepository.save(person);
-      person.pullDomainEvents();
+      await this.eventDispatcher.dispatch(person.pullDomainEvents());
 
       return toDeactivatePersonResult(person);
     });

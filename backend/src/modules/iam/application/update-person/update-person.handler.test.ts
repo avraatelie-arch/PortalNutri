@@ -9,6 +9,7 @@ import { PersonNotFoundError } from '../errors/person-not-found.error.js';
 import { PersonValidationError } from '../errors/person-validation.error.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
 import { InMemoryPersonRepository } from '../../infrastructure/repositories/in-memory-person.repository.js';
+import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 import { UpdatePersonCommand } from './update-person.command.js';
 import { UpdatePersonHandler } from './update-person.handler.js';
 
@@ -18,7 +19,7 @@ async function seedPerson(
   overrides: Partial<CreatePersonCommand['request']> = {},
   repository = new InMemoryPersonRepository(),
 ) {
-  const createHandler = new CreatePersonHandler(repository);
+  const createHandler = new CreatePersonHandler(repository, noopEventDispatcher);
 
   const created = await createHandler.execute(
     new CreatePersonCommand({
@@ -38,7 +39,7 @@ async function seedPerson(
 describe('UpdatePersonHandler', () => {
   it('updates full name', async () => {
     const { repository, created } = await seedPerson();
-    const handler = new UpdatePersonHandler(repository);
+    const handler = new UpdatePersonHandler(repository, noopEventDispatcher);
 
     const result = await handler.execute(
       new UpdatePersonCommand({
@@ -53,7 +54,7 @@ describe('UpdatePersonHandler', () => {
 
   it('updates preferred name', async () => {
     const { repository, created } = await seedPerson();
-    const handler = new UpdatePersonHandler(repository);
+    const handler = new UpdatePersonHandler(repository, noopEventDispatcher);
 
     const result = await handler.execute(
       new UpdatePersonCommand({
@@ -69,7 +70,7 @@ describe('UpdatePersonHandler', () => {
     const { repository, created } = await seedPerson({
       preferredName: 'Mari',
     });
-    const handler = new UpdatePersonHandler(repository);
+    const handler = new UpdatePersonHandler(repository, noopEventDispatcher);
 
     const result = await handler.execute(
       new UpdatePersonCommand({
@@ -83,7 +84,7 @@ describe('UpdatePersonHandler', () => {
 
   it('updates email', async () => {
     const { repository, created } = await seedPerson();
-    const handler = new UpdatePersonHandler(repository);
+    const handler = new UpdatePersonHandler(repository, noopEventDispatcher);
 
     const result = await handler.execute(
       new UpdatePersonCommand({
@@ -97,7 +98,7 @@ describe('UpdatePersonHandler', () => {
 
   it('updates phone', async () => {
     const { repository, created } = await seedPerson();
-    const handler = new UpdatePersonHandler(repository);
+    const handler = new UpdatePersonHandler(repository, noopEventDispatcher);
 
     const result = await handler.execute(
       new UpdatePersonCommand({
@@ -111,7 +112,7 @@ describe('UpdatePersonHandler', () => {
 
   it('persists updated person in repository', async () => {
     const { repository, created } = await seedPerson();
-    const handler = new UpdatePersonHandler(repository);
+    const handler = new UpdatePersonHandler(repository, noopEventDispatcher);
 
     await handler.execute(
       new UpdatePersonCommand({
@@ -128,7 +129,7 @@ describe('UpdatePersonHandler', () => {
 
   it('does not change document or birth date', async () => {
     const { repository, created } = await seedPerson();
-    const handler = new UpdatePersonHandler(repository);
+    const handler = new UpdatePersonHandler(repository, noopEventDispatcher);
 
     const result = await handler.execute(
       new UpdatePersonCommand({
@@ -145,8 +146,8 @@ describe('UpdatePersonHandler', () => {
 
   it('rejects duplicate email from another person', async () => {
     const repository = new InMemoryPersonRepository();
-    const createHandler = new CreatePersonHandler(repository);
-    const updateHandler = new UpdatePersonHandler(repository);
+    const createHandler = new CreatePersonHandler(repository, noopEventDispatcher);
+    const updateHandler = new UpdatePersonHandler(repository, noopEventDispatcher);
 
     const first = await createHandler.execute(
       new CreatePersonCommand({
@@ -186,7 +187,7 @@ describe('UpdatePersonHandler', () => {
 
   it('allows updating with the same email', async () => {
     const { repository, created } = await seedPerson();
-    const handler = new UpdatePersonHandler(repository);
+    const handler = new UpdatePersonHandler(repository, noopEventDispatcher);
 
     const result = await handler.execute(
       new UpdatePersonCommand({
@@ -201,7 +202,7 @@ describe('UpdatePersonHandler', () => {
   });
 
   it('throws PersonNotFoundError when person does not exist', async () => {
-    const handler = new UpdatePersonHandler(new InMemoryPersonRepository());
+    const handler = new UpdatePersonHandler(new InMemoryPersonRepository(), noopEventDispatcher);
 
     await assert.rejects(
       () =>
@@ -229,7 +230,7 @@ describe('UpdatePersonHandler', () => {
     await repository.save(person);
     person.pullDomainEvents();
 
-    const handler = new UpdatePersonHandler(repository);
+    const handler = new UpdatePersonHandler(repository, noopEventDispatcher);
 
     await assert.rejects(
       () =>

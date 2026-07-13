@@ -24,9 +24,14 @@ import { PrismaSessionRepository } from './infrastructure/repositories/prisma-se
 import { JoseTokenService } from './infrastructure/tokens/jose-token.service.js';
 import { DefaultAuthorizationService } from './infrastructure/authorization/default-authorization.service.js';
 import type { AuthorizationService } from './application/authorization/authorization.service.js';
+import { EventDispatcher } from '../../core/application/events/event-dispatcher.js';
+import { EventHandlerRegistry } from '../../core/infrastructure/events/event-handler-registry.js';
+import { InProcessEventBus } from '../../core/infrastructure/events/in-process-event-bus.js';
+import { DefaultEventBusLogger } from '../../core/infrastructure/events/default-event-bus-logger.js';
 
 export interface IamDependencies {
   authorizationService: AuthorizationService;
+  eventDispatcher: EventDispatcher;
   personHandlers: PersonRouteHandlers;
   authHandlers: Pick<AuthRouteHandlers, 'registerCredentialHandler'>;
   sessionHandlers: {
@@ -44,14 +49,28 @@ export function createIamDependencies(env: Env): IamDependencies {
   const sessionRepository = new PrismaSessionRepository(prisma);
   const passwordHasher = new Argon2PasswordHasher(buildArgon2Config(env));
   const tokenService = new JoseTokenService(buildJwtConfig(env));
+  const eventHandlerRegistry = new EventHandlerRegistry();
+  const eventDispatcher = new EventDispatcher(
+    new InProcessEventBus(eventHandlerRegistry, new DefaultEventBusLogger()),
+  );
 
   return {
     authorizationService: new DefaultAuthorizationService(),
+    eventDispatcher,
     personHandlers: {
-      createPersonHandler: new CreatePersonHandler(personRepository),
+      createPersonHandler: new CreatePersonHandler(
+        personRepository,
+        eventDispatcher,
+      ),
       findPersonByIdHandler: new FindPersonByIdHandler(personRepository),
-      updatePersonHandler: new UpdatePersonHandler(personRepository),
-      deactivatePersonHandler: new DeactivatePersonHandler(personRepository),
+      updatePersonHandler: new UpdatePersonHandler(
+        personRepository,
+        eventDispatcher,
+      ),
+      deactivatePersonHandler: new DeactivatePersonHandler(
+        personRepository,
+        eventDispatcher,
+      ),
     },
     authHandlers: {
       registerCredentialHandler: new RegisterCredentialHandler(
@@ -67,12 +86,17 @@ export function createIamDependencies(env: Env): IamDependencies {
         sessionRepository,
         passwordHasher,
         tokenService,
+        eventDispatcher,
       ),
       refreshSessionHandler: new RefreshSessionHandler(
         sessionRepository,
         tokenService,
+        eventDispatcher,
       ),
-      logoutSessionHandler: new LogoutSessionHandler(sessionRepository),
+      logoutSessionHandler: new LogoutSessionHandler(
+        sessionRepository,
+        eventDispatcher,
+      ),
       validateAccessTokenHandler: new ValidateAccessTokenHandler(
         sessionRepository,
         tokenService,

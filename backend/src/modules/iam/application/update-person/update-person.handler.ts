@@ -6,13 +6,17 @@ import { PersonId } from '../../domain/value-objects/person-id.js';
 import { Phone } from '../../domain/value-objects/phone.js';
 import { PreferredName } from '../../domain/value-objects/preferred-name.js';
 import { executeUseCase } from '../execute-use-case.js';
+import type { EventDispatcher } from '../../../../core/application/events/event-dispatcher.js';
 import { PersonEmailAlreadyExistsError } from '../errors/person-email-already-exists.error.js';
 import { PersonNotFoundError } from '../errors/person-not-found.error.js';
 import { UpdatePersonCommand } from './update-person.command.js';
 import { toUpdatePersonResult } from './update-person.result.js';
 
 export class UpdatePersonHandler {
-  constructor(private readonly personRepository: PersonRepository) {}
+  constructor(
+    private readonly personRepository: PersonRepository,
+    private readonly eventDispatcher: EventDispatcher,
+  ) {}
 
   async execute(command: UpdatePersonCommand) {
     return executeUseCase(async () => {
@@ -52,7 +56,7 @@ export class UpdatePersonHandler {
 
       person.update(updateProps);
       await this.personRepository.save(person);
-      person.pullDomainEvents();
+      await this.eventDispatcher.dispatch(person.pullDomainEvents());
 
       return toUpdatePersonResult(person);
     });

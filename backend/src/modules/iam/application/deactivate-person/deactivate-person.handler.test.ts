@@ -7,6 +7,7 @@ import { CreatePersonHandler } from '../create-person/create-person.handler.js';
 import { PersonNotFoundError } from '../errors/person-not-found.error.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
 import { InMemoryPersonRepository } from '../../infrastructure/repositories/in-memory-person.repository.js';
+import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 import { DeactivatePersonCommand } from './deactivate-person.command.js';
 import { DeactivatePersonHandler } from './deactivate-person.handler.js';
 
@@ -16,7 +17,7 @@ async function seedPerson(
   overrides: Partial<CreatePersonCommand['request']> = {},
   repository = new InMemoryPersonRepository(),
 ) {
-  const createHandler = new CreatePersonHandler(repository);
+  const createHandler = new CreatePersonHandler(repository, noopEventDispatcher);
 
   const created = await createHandler.execute(
     new CreatePersonCommand({
@@ -36,7 +37,7 @@ async function seedPerson(
 describe('DeactivatePersonHandler', () => {
   it('deactivates an active person', async () => {
     const { repository, created } = await seedPerson();
-    const handler = new DeactivatePersonHandler(repository);
+    const handler = new DeactivatePersonHandler(repository, noopEventDispatcher);
 
     const result = await handler.execute(
       new DeactivatePersonCommand(created.id),
@@ -48,7 +49,7 @@ describe('DeactivatePersonHandler', () => {
 
   it('persists deactivated person in repository', async () => {
     const { repository, created } = await seedPerson();
-    const handler = new DeactivatePersonHandler(repository);
+    const handler = new DeactivatePersonHandler(repository, noopEventDispatcher);
 
     await handler.execute(new DeactivatePersonCommand(created.id));
 
@@ -61,7 +62,7 @@ describe('DeactivatePersonHandler', () => {
 
   it('does not remove the person from repository', async () => {
     const { repository, created } = await seedPerson();
-    const handler = new DeactivatePersonHandler(repository);
+    const handler = new DeactivatePersonHandler(repository, noopEventDispatcher);
 
     await handler.execute(new DeactivatePersonCommand(created.id));
 
@@ -75,7 +76,7 @@ describe('DeactivatePersonHandler', () => {
     const { repository, created } = await seedPerson({
       preferredName: 'Mari',
     });
-    const handler = new DeactivatePersonHandler(repository);
+    const handler = new DeactivatePersonHandler(repository, noopEventDispatcher);
     const before = await repository.findById(PersonId.create(created.id));
 
     assert.ok(before);
@@ -103,7 +104,7 @@ describe('DeactivatePersonHandler', () => {
 
   it('is idempotent when person is already inactive', async () => {
     const { repository, created } = await seedPerson();
-    const handler = new DeactivatePersonHandler(repository);
+    const handler = new DeactivatePersonHandler(repository, noopEventDispatcher);
 
     await handler.execute(new DeactivatePersonCommand(created.id));
 
@@ -115,7 +116,7 @@ describe('DeactivatePersonHandler', () => {
   });
 
   it('throws PersonNotFoundError when person does not exist', async () => {
-    const handler = new DeactivatePersonHandler(new InMemoryPersonRepository());
+    const handler = new DeactivatePersonHandler(new InMemoryPersonRepository(), noopEventDispatcher);
 
     await assert.rejects(
       () => handler.execute(new DeactivatePersonCommand(UNKNOWN_PERSON_ID)),

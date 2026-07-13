@@ -22,6 +22,7 @@ import { InMemoryPersonRepository } from '../../infrastructure/repositories/in-m
 import { InMemorySessionRepository } from '../../infrastructure/repositories/in-memory-session.repository.js';
 import { JoseTokenService } from '../../infrastructure/tokens/jose-token.service.js';
 import { createTestJwtConfig } from '../../../../test-support/jwt-test.config.js';
+import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 import { RefreshSessionCommand } from './refresh-session.command.js';
 import { RefreshSessionHandler } from './refresh-session.handler.js';
 
@@ -42,7 +43,7 @@ async function login() {
   const tokenService = new JoseTokenService(createTestJwtConfig());
   const password = 'SecureP@ssw0rd';
 
-  const createHandler = new CreatePersonHandler(personRepository);
+  const createHandler = new CreatePersonHandler(personRepository, noopEventDispatcher);
   const created = await createHandler.execute(
     new CreatePersonCommand({
       fullName: 'Maria Silva',
@@ -72,6 +73,7 @@ async function login() {
     sessionRepository,
     new FakePasswordHasher(),
     tokenService,
+    noopEventDispatcher,
   );
 
   const authenticated = await authenticateHandler.execute(
@@ -84,6 +86,7 @@ async function login() {
   const refreshHandler = new RefreshSessionHandler(
     sessionRepository,
     tokenService,
+    noopEventDispatcher,
   );
 
   return {
@@ -163,10 +166,7 @@ describe('RefreshSessionHandler', () => {
 
     await sessionRepository.save(expiredSession);
 
-    const refreshHandler = new RefreshSessionHandler(
-      sessionRepository,
-      tokenService,
-    );
+    const refreshHandler = new RefreshSessionHandler(sessionRepository, tokenService, noopEventDispatcher);
 
     await assert.rejects(
       refreshHandler.execute(
@@ -204,10 +204,7 @@ describe('RefreshSessionHandler', () => {
 
     await sessionRepository.save(expiredSession);
 
-    const refreshHandler = new RefreshSessionHandler(
-      sessionRepository,
-      tokenService,
-    );
+    const refreshHandler = new RefreshSessionHandler(sessionRepository, tokenService, noopEventDispatcher);
 
     await assert.rejects(
       refreshHandler.execute(
@@ -245,10 +242,7 @@ describe('RefreshSessionHandler', () => {
 
     await sessionRepository.save(revokedSession);
 
-    const refreshHandler = new RefreshSessionHandler(
-      sessionRepository,
-      tokenService,
-    );
+    const refreshHandler = new RefreshSessionHandler(sessionRepository, tokenService, noopEventDispatcher);
 
     await assert.rejects(
       refreshHandler.execute(
