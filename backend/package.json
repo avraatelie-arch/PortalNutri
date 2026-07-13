@@ -2,6 +2,7 @@
   "name": "portalnutri-backend",
   "version": "1.0.0",
   "description": "Backend do PortalNutri Platform",
+  "packageManager": "pnpm@11.10.0",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
@@ -9,6 +10,8 @@
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:validate": "prisma validate",
     "prisma:studio": "prisma studio",
     "test": "tsx --test \"src/**/!(*.integration).test.ts\"",
     "test:integration": "tsx --test --test-concurrency=1 src/**/*.integration.test.ts",

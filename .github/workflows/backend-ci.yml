@@ -1,0 +1,96 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  ci:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: portalnutri_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/portalnutri_test?schema=public
+      JWT_SECRET: ci-jwt-secret-with-at-least-32-characters!!
+      AUTH_CREDENTIAL_REGISTRATION_ENABLED: 'true'
+      OPENAPI_ENABLED: 'false'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: backend/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm prisma:generate
+
+      - name: Validate Prisma schema
+        run: pnpm prisma:validate
+
+      - name: Apply database migrations
+        run: |
+          mkdir -p "${RUNNER_TEMP}/ci-diagnostics"
+          pnpm prisma:migrate:deploy 2>&1 | tee "${RUNNER_TEMP}/ci-diagnostics/migrate-deploy.log"
+
+      - name: Run unit tests
+        run: pnpm test 2>&1 | tee "${RUNNER_TEMP}/ci-diagnostics/unit-tests.log"
+
+      - name: Run integration tests
+        run: pnpm test:integration 2>&1 | tee "${RUNNER_TEMP}/ci-diagnostics/integration-tests.log"
+
+      - name: Build
+        run: pnpm build 2>&1 | tee "${RUNNER_TEMP}/ci-diagnostics/build.log"
+
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-ci-diagnostics
+          path: ${{ runner.temp }}/ci-diagnostics
+          retention-days: 7
+          if-no-files-found: ignore
