@@ -101,6 +101,11 @@ export async function registerAuthRoutes(
       schema: {
         security: [{ bearerAuth: [] }],
       },
+      config: {
+        authorization: {
+          authenticatedOnly: true,
+        },
+      },
     },
     async (request, reply) => {
       const securityContext = requireSecurityContext(request, reply);
@@ -127,6 +132,11 @@ export async function registerAuthRoutes(
       schema: {
         security: [{ bearerAuth: [] }],
       },
+      config: {
+        authorization: {
+          authenticatedOnly: true,
+        },
+      },
     },
     async (request, reply) => {
       const securityContext = requireSecurityContext(request, reply);
@@ -152,6 +162,11 @@ export async function registerAuthRoutes(
           env.AUTH_CREDENTIAL_REGISTRATION_ENABLED
             ? 'Registers credentials for an existing person. Available only when AUTH_CREDENTIAL_REGISTRATION_ENABLED is true.'
             : 'Credential registration is disabled in this environment.',
+      },
+      config: {
+        authorization: {
+          authenticatedOnly: true,
+        },
       },
     },
     async (request, reply) => {

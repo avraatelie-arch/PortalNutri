@@ -15,6 +15,8 @@ import {
   updatePersonBodySchema,
 } from './schemas/person.schemas.js';
 import type { CreatePersonBody } from './schemas/person.schemas.js';
+import { AuthorizationAction } from '../../application/authorization/authorization-action.js';
+import { AuthorizationResource } from '../../application/authorization/authorization-resource.js';
 type UpdatePersonBody = z.infer<typeof updatePersonBodySchema>;
 
 export interface PersonRouteHandlers {
@@ -40,7 +42,15 @@ export async function registerPersonRoutes(
 ): Promise<void> {
   app.post(
     '/persons',
-    { schema: { body: createPersonBodySchema } },
+    {
+      schema: { body: createPersonBodySchema },
+      config: {
+        authorization: {
+          resource: AuthorizationResource.PERSON,
+          action: AuthorizationAction.CREATE,
+        },
+      },
+    },
     async (request, reply) => {
       try {
         const body = request.body as CreatePersonBody;
@@ -57,7 +67,16 @@ export async function registerPersonRoutes(
 
   app.get(
     '/persons/:id',
-    { schema: { params: personIdParamsSchema } },
+    {
+      schema: { params: personIdParamsSchema },
+      config: {
+        authorization: {
+          resource: AuthorizationResource.PERSON,
+          action: AuthorizationAction.READ,
+          resourceIdParam: 'id',
+        },
+      },
+    },
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
@@ -78,6 +97,13 @@ export async function registerPersonRoutes(
       schema: {
         params: personIdParamsSchema,
         body: updatePersonBodySchema,
+      },
+      config: {
+        authorization: {
+          resource: AuthorizationResource.PERSON,
+          action: AuthorizationAction.UPDATE,
+          resourceIdParam: 'id',
+        },
       },
     },
     async (request, reply) => {
@@ -100,7 +126,16 @@ export async function registerPersonRoutes(
 
   app.delete(
     '/persons/:id',
-    { schema: { params: personIdParamsSchema } },
+    {
+      schema: { params: personIdParamsSchema },
+      config: {
+        authorization: {
+          resource: AuthorizationResource.PERSON,
+          action: AuthorizationAction.DELETE,
+          resourceIdParam: 'id',
+        },
+      },
+    },
     async (request, reply) => {
       try {
         const { id } = request.params as { id: string };

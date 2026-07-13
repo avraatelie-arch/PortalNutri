@@ -47,6 +47,47 @@ function requiresBearerAuth(url: string): boolean {
   );
 }
 
+const errorResponseSchema = {
+  type: 'object',
+  properties: {
+    statusCode: { type: 'number' },
+    error: { type: 'string' },
+    message: { type: 'string' },
+  },
+  required: ['statusCode', 'error', 'message'],
+} as const;
+
+const unauthorizedResponse = {
+  description: 'Authentication required.',
+  content: {
+    'application/json': {
+      schema: errorResponseSchema,
+    },
+  },
+} as const;
+
+const forbiddenResponse = {
+  description: 'Access denied.',
+  content: {
+    'application/json': {
+      schema: errorResponseSchema,
+    },
+  },
+} as const;
+
+function withProtectedResponses(schema: FastifySchema): FastifySchema {
+  return {
+    ...schema,
+    response: {
+      ...(typeof schema.response === 'object' && schema.response !== null
+        ? schema.response
+        : {}),
+      401: unauthorizedResponse,
+      403: forbiddenResponse,
+    },
+  };
+}
+
 export function transformRouteSchema({
   schema,
   url,
@@ -89,6 +130,13 @@ export function transformRouteSchema({
 
   if (requiresBearerAuth(url) && transformedSchema.security === undefined) {
     transformedSchema.security = [{ bearerAuth: [] }];
+  }
+
+  if (requiresBearerAuth(url)) {
+    return {
+      schema: withProtectedResponses(transformedSchema),
+      url,
+    };
   }
 
   return {

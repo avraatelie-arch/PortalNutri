@@ -22,8 +22,11 @@ import { PrismaCredentialRepository } from './infrastructure/repositories/prisma
 import { PrismaPersonRepository } from './infrastructure/repositories/prisma-person.repository.js';
 import { PrismaSessionRepository } from './infrastructure/repositories/prisma-session.repository.js';
 import { JoseTokenService } from './infrastructure/tokens/jose-token.service.js';
+import { DefaultAuthorizationService } from './infrastructure/authorization/default-authorization.service.js';
+import type { AuthorizationService } from './application/authorization/authorization.service.js';
 
 export interface IamDependencies {
+  authorizationService: AuthorizationService;
   personHandlers: PersonRouteHandlers;
   authHandlers: Pick<AuthRouteHandlers, 'registerCredentialHandler'>;
   sessionHandlers: {
@@ -43,6 +46,7 @@ export function createIamDependencies(env: Env): IamDependencies {
   const tokenService = new JoseTokenService(buildJwtConfig(env));
 
   return {
+    authorizationService: new DefaultAuthorizationService(),
     personHandlers: {
       createPersonHandler: new CreatePersonHandler(personRepository),
       findPersonByIdHandler: new FindPersonByIdHandler(personRepository),

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { Env } from '../config/env.js';
 import { registerAuthentication } from './auth/register-authentication.js';
+import { registerAuthorization } from './authorization/register-authorization.js';
 import {
   createIamDependencies,
   registerAuthModule,
@@ -22,6 +23,8 @@ export async function registerModules(
     env,
     dependencies.sessionHandlers.validateAccessTokenHandler,
   );
+
+  registerAuthorization(app, env, dependencies.authorizationService);
 
   await registerHealthRoutes(app);
 
