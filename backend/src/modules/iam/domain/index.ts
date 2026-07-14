@@ -1,6 +1,11 @@
 export { AggregateRoot } from './aggregates/aggregate-root.js';
+export { Membership } from './aggregates/membership.aggregate.js';
 export { Person } from './aggregates/person.aggregate.js';
 export { Tenant } from './aggregates/tenant.aggregate.js';
+export type {
+  CreateMembershipProps,
+  ReconstituteMembershipProps,
+} from './aggregates/membership.aggregate.js';
 export type {
   CreatePersonProps,
   ReconstitutePersonProps,
@@ -13,6 +18,11 @@ export type {
 export { DomainError } from './errors/domain-error.js';
 export type { DomainEvent } from './events/domain-event.js';
 export {
+  MembershipCreated,
+  MembershipReactivated,
+  MembershipRemoved,
+} from './events/membership-events.js';
+export {
   PersonActivated,
   PersonCreated,
   PersonDeactivated,
@@ -23,12 +33,15 @@ export {
   TenantCreated,
   TenantDeactivated,
 } from './events/tenant-events.js';
+export type { MembershipRepository } from './repositories/membership-repository.js';
 export type { PersonRepository } from './repositories/person-repository.js';
 export type { TenantRepository } from './repositories/tenant-repository.js';
 export { BirthDate } from './value-objects/birth-date.js';
 export { Document, DocumentType } from './value-objects/document.js';
 export { Email } from './value-objects/email.js';
 export { FullName } from './value-objects/full-name.js';
+export { MembershipId } from './value-objects/membership-id.js';
+export { MembershipStatus } from './value-objects/membership-status.js';
 export { PersonId } from './value-objects/person-id.js';
 export { PersonStatus } from './value-objects/person-status.js';
 export { TenantId } from './value-objects/tenant-id.js';

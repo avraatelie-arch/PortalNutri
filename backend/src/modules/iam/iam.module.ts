@@ -5,14 +5,17 @@ import { buildJwtConfig } from '../../config/jwt.js';
 import { getPrismaClient } from '../../core/database/prisma-client.js';
 import { AuthenticatePersonHandler } from './application/authenticate-person/authenticate-person.handler.js';
 import { ActivateTenantHandler } from './application/activate-tenant/activate-tenant.handler.js';
+import { AddPersonToTenantHandler } from './application/add-person-to-tenant/add-person-to-tenant.handler.js';
 import { CreatePersonHandler } from './application/create-person/create-person.handler.js';
 import { CreateTenantHandler } from './application/create-tenant/create-tenant.handler.js';
 import { DeactivatePersonHandler } from './application/deactivate-person/deactivate-person.handler.js';
 import { DeactivateTenantHandler } from './application/deactivate-tenant/deactivate-tenant.handler.js';
 import { FindPersonByIdHandler } from './application/find-person-by-id/find-person-by-id.handler.js';
+import { FindMembershipHandler } from './application/find-membership/find-membership.handler.js';
 import { FindTenantHandler } from './application/find-tenant/find-tenant.handler.js';
 import { LogoutSessionHandler } from './application/logout-session/logout-session.handler.js';
 import { RefreshSessionHandler } from './application/refresh-session/refresh-session.handler.js';
+import { RemovePersonFromTenantHandler } from './application/remove-person-from-tenant/remove-person-from-tenant.handler.js';
 import { RegisterCredentialHandler } from './application/register-credential/register-credential.handler.js';
 import { UpdatePersonHandler } from './application/update-person/update-person.handler.js';
 import { ValidateAccessTokenHandler } from './application/validate-access-token/validate-access-token.handler.js';
@@ -23,6 +26,7 @@ import { registerPersonRoutes } from './contracts/api/person.routes.js';
 import type { PersonRouteHandlers } from './contracts/api/person.routes.js';
 import { Argon2PasswordHasher } from './infrastructure/cryptography/argon2-password-hasher.js';
 import { PrismaCredentialRepository } from './infrastructure/repositories/prisma-credential.repository.js';
+import { PrismaMembershipRepository } from './infrastructure/repositories/prisma-membership.repository.js';
 import { PrismaPersonRepository } from './infrastructure/repositories/prisma-person.repository.js';
 import { PrismaSessionRepository } from './infrastructure/repositories/prisma-session.repository.js';
 import { PrismaTenantRepository } from './infrastructure/repositories/prisma-tenant.repository.js';
@@ -55,6 +59,11 @@ export interface IamDependencies {
     activateTenantHandler: ActivateTenantHandler;
     deactivateTenantHandler: DeactivateTenantHandler;
   };
+  membershipHandlers: {
+    addPersonToTenantHandler: AddPersonToTenantHandler;
+    removePersonFromTenantHandler: RemovePersonFromTenantHandler;
+    findMembershipHandler: FindMembershipHandler;
+  };
 }
 
 export function createIamDependencies(env: Env): IamDependencies {
@@ -63,6 +72,7 @@ export function createIamDependencies(env: Env): IamDependencies {
   const credentialRepository = new PrismaCredentialRepository(prisma);
   const sessionRepository = new PrismaSessionRepository(prisma);
   const tenantRepository = new PrismaTenantRepository(prisma);
+  const membershipRepository = new PrismaMembershipRepository(prisma);
   const passwordHasher = new Argon2PasswordHasher(buildArgon2Config(env));
   const tokenService = new JoseTokenService(buildJwtConfig(env));
   const eventHandlerRegistry = new EventHandlerRegistry();
@@ -139,6 +149,19 @@ export function createIamDependencies(env: Env): IamDependencies {
         tenantRepository,
         eventDispatcher,
       ),
+    },
+    membershipHandlers: {
+      addPersonToTenantHandler: new AddPersonToTenantHandler(
+        membershipRepository,
+        personRepository,
+        tenantRepository,
+        eventDispatcher,
+      ),
+      removePersonFromTenantHandler: new RemovePersonFromTenantHandler(
+        membershipRepository,
+        eventDispatcher,
+      ),
+      findMembershipHandler: new FindMembershipHandler(membershipRepository),
     },
   };
 }

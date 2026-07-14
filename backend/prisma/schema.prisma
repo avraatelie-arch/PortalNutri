@@ -34,6 +34,7 @@ model Person {
   updatedAt     DateTime     @updatedAt @map("updated_at")
   credential    Credential?
   sessions      Session[]
+  memberships   Membership[]
 
   @@unique([documentType, document])
   @@map("persons")
@@ -100,27 +101,35 @@ enum TenantStatus {
 }
 
 model Tenant {
-  id           String        @id @default(uuid())
-  name         String
-  slug         String        @unique
-  status       TenantStatus  @default(ACTIVE)
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  associations Association[]
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  status      TenantStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  memberships Membership[]
 
   @@map("tenants")
 }
 
-model Association {
-  id        String   @id @default(uuid())
-  personId  String   @map("person_id")
-  tenantId  String   @map("tenant_id")
-  type      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+enum MembershipStatus {
+  ACTIVE
+  REMOVED
+}
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+model Membership {
+  id            String           @id @default(uuid())
+  personId      String           @map("person_id")
+  tenantId      String           @map("tenant_id")
+  status        MembershipStatus @default(ACTIVE)
+  createdAt     DateTime         @default(now()) @map("created_at")
+  reactivatedAt DateTime?        @map("reactivated_at")
+  removedAt     DateTime?        @map("removed_at")
+  person        Person           @relation(fields: [personId], references: [id], onDelete: Restrict)
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   @@unique([personId, tenantId])
-  @@map("associations")
+  @@index([personId])
+  @@index([tenantId])
+  @@map("memberships")
 }
