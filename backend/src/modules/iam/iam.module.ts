@@ -6,16 +6,21 @@ import { getPrismaClient } from '../../core/database/prisma-client.js';
 import { AuthenticatePersonHandler } from './application/authenticate-person/authenticate-person.handler.js';
 import { ActivateTenantHandler } from './application/activate-tenant/activate-tenant.handler.js';
 import { AddPersonToTenantHandler } from './application/add-person-to-tenant/add-person-to-tenant.handler.js';
+import { AssignRoleHandler } from './application/assign-role/assign-role.handler.js';
 import { CreatePersonHandler } from './application/create-person/create-person.handler.js';
+import { CreateRoleHandler } from './application/create-role/create-role.handler.js';
 import { CreateTenantHandler } from './application/create-tenant/create-tenant.handler.js';
 import { DeactivatePersonHandler } from './application/deactivate-person/deactivate-person.handler.js';
 import { DeactivateTenantHandler } from './application/deactivate-tenant/deactivate-tenant.handler.js';
 import { FindPersonByIdHandler } from './application/find-person-by-id/find-person-by-id.handler.js';
 import { FindMembershipHandler } from './application/find-membership/find-membership.handler.js';
+import { FindRoleAssignmentHandler } from './application/find-role-assignment/find-role-assignment.handler.js';
+import { FindRoleHandler } from './application/find-role/find-role.handler.js';
 import { FindTenantHandler } from './application/find-tenant/find-tenant.handler.js';
 import { LogoutSessionHandler } from './application/logout-session/logout-session.handler.js';
 import { RefreshSessionHandler } from './application/refresh-session/refresh-session.handler.js';
 import { RemovePersonFromTenantHandler } from './application/remove-person-from-tenant/remove-person-from-tenant.handler.js';
+import { RemoveRoleHandler } from './application/remove-role/remove-role.handler.js';
 import { RegisterCredentialHandler } from './application/register-credential/register-credential.handler.js';
 import { UpdatePersonHandler } from './application/update-person/update-person.handler.js';
 import { ValidateAccessTokenHandler } from './application/validate-access-token/validate-access-token.handler.js';
@@ -28,6 +33,8 @@ import { Argon2PasswordHasher } from './infrastructure/cryptography/argon2-passw
 import { PrismaCredentialRepository } from './infrastructure/repositories/prisma-credential.repository.js';
 import { PrismaMembershipRepository } from './infrastructure/repositories/prisma-membership.repository.js';
 import { PrismaPersonRepository } from './infrastructure/repositories/prisma-person.repository.js';
+import { PrismaRoleAssignmentRepository } from './infrastructure/repositories/prisma-role-assignment.repository.js';
+import { PrismaRoleRepository } from './infrastructure/repositories/prisma-role.repository.js';
 import { PrismaSessionRepository } from './infrastructure/repositories/prisma-session.repository.js';
 import { PrismaTenantRepository } from './infrastructure/repositories/prisma-tenant.repository.js';
 import { JoseTokenService } from './infrastructure/tokens/jose-token.service.js';
@@ -64,6 +71,13 @@ export interface IamDependencies {
     removePersonFromTenantHandler: RemovePersonFromTenantHandler;
     findMembershipHandler: FindMembershipHandler;
   };
+  roleHandlers: {
+    createRoleHandler: CreateRoleHandler;
+    findRoleHandler: FindRoleHandler;
+    assignRoleHandler: AssignRoleHandler;
+    removeRoleHandler: RemoveRoleHandler;
+    findRoleAssignmentHandler: FindRoleAssignmentHandler;
+  };
 }
 
 export function createIamDependencies(env: Env): IamDependencies {
@@ -73,6 +87,8 @@ export function createIamDependencies(env: Env): IamDependencies {
   const sessionRepository = new PrismaSessionRepository(prisma);
   const tenantRepository = new PrismaTenantRepository(prisma);
   const membershipRepository = new PrismaMembershipRepository(prisma);
+  const roleRepository = new PrismaRoleRepository(prisma);
+  const roleAssignmentRepository = new PrismaRoleAssignmentRepository(prisma);
   const passwordHasher = new Argon2PasswordHasher(buildArgon2Config(env));
   const tokenService = new JoseTokenService(buildJwtConfig(env));
   const eventHandlerRegistry = new EventHandlerRegistry();
@@ -162,6 +178,28 @@ export function createIamDependencies(env: Env): IamDependencies {
         eventDispatcher,
       ),
       findMembershipHandler: new FindMembershipHandler(membershipRepository),
+    },
+    roleHandlers: {
+      createRoleHandler: new CreateRoleHandler(
+        roleRepository,
+        tenantRepository,
+        eventDispatcher,
+      ),
+      findRoleHandler: new FindRoleHandler(roleRepository),
+      assignRoleHandler: new AssignRoleHandler(
+        roleAssignmentRepository,
+        membershipRepository,
+        roleRepository,
+        eventDispatcher,
+      ),
+      removeRoleHandler: new RemoveRoleHandler(
+        roleAssignmentRepository,
+        membershipRepository,
+        eventDispatcher,
+      ),
+      findRoleAssignmentHandler: new FindRoleAssignmentHandler(
+        roleAssignmentRepository,
+      ),
     },
   };
 }

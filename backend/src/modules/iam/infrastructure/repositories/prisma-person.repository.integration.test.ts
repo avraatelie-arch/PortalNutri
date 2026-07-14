@@ -22,6 +22,8 @@ const prisma = new PrismaClient();
 const repository = new PrismaPersonRepository(prisma);
 
 async function resetPersons() {
+  await prisma.roleAssignment.deleteMany();
+  await prisma.role.deleteMany();
   await prisma.membership.deleteMany();
   await prisma.session.deleteMany();
   await prisma.credential.deleteMany();

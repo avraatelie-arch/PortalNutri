@@ -85,14 +85,39 @@ model Credential {
 }
 
 model Role {
-  id        String   @id @default(uuid())
-  personId  String   @map("person_id")
-  name      String
-  scope     String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id              String           @id @default(uuid())
+  tenantId        String           @map("tenant_id")
+  name            String
+  normalizedName  String           @map("normalized_name")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  roleAssignments RoleAssignment[]
 
+  @@unique([tenantId, normalizedName])
+  @@index([tenantId])
   @@map("roles")
+}
+
+enum RoleAssignmentStatus {
+  ACTIVE
+  REMOVED
+}
+
+model RoleAssignment {
+  id            String               @id @default(uuid())
+  membershipId  String               @map("membership_id")
+  roleId        String               @map("role_id")
+  status        RoleAssignmentStatus @default(ACTIVE)
+  createdAt     DateTime             @default(now()) @map("created_at")
+  reactivatedAt DateTime?            @map("reactivated_at")
+  removedAt     DateTime?            @map("removed_at")
+  membership    Membership           @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  role          Role                 @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([membershipId, roleId])
+  @@index([membershipId])
+  @@index([roleId])
+  @@map("role_assignments")
 }
 
 enum TenantStatus {
@@ -108,6 +133,7 @@ model Tenant {
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
   memberships Membership[]
+  roles       Role[]
 
   @@map("tenants")
 }
@@ -125,8 +151,9 @@ model Membership {
   createdAt     DateTime         @default(now()) @map("created_at")
   reactivatedAt DateTime?        @map("reactivated_at")
   removedAt     DateTime?        @map("removed_at")
-  person        Person           @relation(fields: [personId], references: [id], onDelete: Restrict)
-  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  person          Person           @relation(fields: [personId], references: [id], onDelete: Restrict)
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  roleAssignments RoleAssignment[]
 
   @@unique([personId, tenantId])
   @@index([personId])
