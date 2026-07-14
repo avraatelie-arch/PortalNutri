@@ -20,6 +20,8 @@ const roleRepository = new PrismaRoleRepository(prisma);
 const tenantRepository = new PrismaTenantRepository(prisma);
 
 async function resetRoles() {
+  await prisma.permissionAssignment.deleteMany();
+  await prisma.permission.deleteMany();
   await prisma.roleAssignment.deleteMany();
   await prisma.role.deleteMany();
   await prisma.membership.deleteMany();

@@ -7,6 +7,8 @@ import type { ValidateAccessTokenHandler as ValidateAccessTokenHandlerType } fro
 import { createAuthenticationHandlers } from './composition/authentication.factory.js';
 import { createMembershipHandlers } from './composition/membership.factory.js';
 import type { MembershipHandlers } from './composition/membership.factory.js';
+import { createPermissionHandlers } from './composition/permission.factory.js';
+import type { PermissionHandlers } from './composition/permission.factory.js';
 import { createPersonHandlers } from './composition/person.factory.js';
 import { createRoleHandlers } from './composition/role.factory.js';
 import type { RoleHandlers } from './composition/role.factory.js';
@@ -19,6 +21,8 @@ import type { PersonRouteHandlers } from './contracts/api/person.routes.js';
 import { Argon2PasswordHasher } from './infrastructure/cryptography/argon2-password-hasher.js';
 import { PrismaCredentialRepository } from './infrastructure/repositories/prisma-credential.repository.js';
 import { PrismaMembershipRepository } from './infrastructure/repositories/prisma-membership.repository.js';
+import { PrismaPermissionAssignmentRepository } from './infrastructure/repositories/prisma-permission-assignment.repository.js';
+import { PrismaPermissionRepository } from './infrastructure/repositories/prisma-permission.repository.js';
 import { PrismaPersonRepository } from './infrastructure/repositories/prisma-person.repository.js';
 import { PrismaRoleAssignmentRepository } from './infrastructure/repositories/prisma-role-assignment.repository.js';
 import { PrismaRoleRepository } from './infrastructure/repositories/prisma-role.repository.js';
@@ -50,6 +54,7 @@ export interface IamDependencies {
   tenantHandlers: TenantHandlers;
   membershipHandlers: MembershipHandlers;
   roleHandlers: RoleHandlers;
+  permissionHandlers: PermissionHandlers;
 }
 
 export function createIamDependencies(env: Env): IamDependencies {
@@ -61,6 +66,8 @@ export function createIamDependencies(env: Env): IamDependencies {
   const membershipRepository = new PrismaMembershipRepository(prisma);
   const roleRepository = new PrismaRoleRepository(prisma);
   const roleAssignmentRepository = new PrismaRoleAssignmentRepository(prisma);
+  const permissionRepository = new PrismaPermissionRepository(prisma);
+  const permissionAssignmentRepository = new PrismaPermissionAssignmentRepository(prisma);
   const passwordHasher = new Argon2PasswordHasher(buildArgon2Config(env));
   const tokenService = new JoseTokenService(buildJwtConfig(env));
   const eventHandlerRegistry = new EventHandlerRegistry();
@@ -114,6 +121,13 @@ export function createIamDependencies(env: Env): IamDependencies {
       roleRepository,
       roleAssignmentRepository,
       membershipRepository,
+      tenantRepository,
+      eventDispatcher,
+    }),
+    permissionHandlers: createPermissionHandlers({
+      permissionRepository,
+      permissionAssignmentRepository,
+      roleRepository,
       tenantRepository,
       eventDispatcher,
     }),

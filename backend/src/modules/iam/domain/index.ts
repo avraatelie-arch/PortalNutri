@@ -1,5 +1,7 @@
 export { AggregateRoot } from './aggregates/aggregate-root.js';
 export { Membership } from './aggregates/membership.aggregate.js';
+export { Permission } from './aggregates/permission.aggregate.js';
+export { PermissionAssignment } from './aggregates/permission-assignment.aggregate.js';
 export { Person } from './aggregates/person.aggregate.js';
 export { Role } from './aggregates/role.aggregate.js';
 export { RoleAssignment } from './aggregates/role-assignment.aggregate.js';
@@ -8,6 +10,14 @@ export type {
   CreateMembershipProps,
   ReconstituteMembershipProps,
 } from './aggregates/membership.aggregate.js';
+export type {
+  CreatePermissionProps,
+  ReconstitutePermissionProps,
+} from './aggregates/permission.aggregate.js';
+export type {
+  CreatePermissionAssignmentProps,
+  ReconstitutePermissionAssignmentProps,
+} from './aggregates/permission-assignment.aggregate.js';
 export type {
   CreateRoleProps,
   ReconstituteRoleProps,
@@ -33,6 +43,11 @@ export {
   MembershipRemoved,
 } from './events/membership-events.js';
 export {
+  PermissionGranted,
+  PermissionRevoked,
+} from './events/permission-assignment-events.js';
+export { PermissionCreated } from './events/permission-events.js';
+export {
   RoleAssigned,
   RoleRemoved,
 } from './events/role-assignment-events.js';
@@ -49,6 +64,8 @@ export {
   TenantDeactivated,
 } from './events/tenant-events.js';
 export type { MembershipRepository } from './repositories/membership-repository.js';
+export type { PermissionAssignmentRepository } from './repositories/permission-assignment-repository.js';
+export type { PermissionRepository } from './repositories/permission-repository.js';
 export type { PersonRepository } from './repositories/person-repository.js';
 export type { RoleAssignmentRepository } from './repositories/role-assignment-repository.js';
 export type { RoleRepository } from './repositories/role-repository.js';
@@ -59,6 +76,10 @@ export { Email } from './value-objects/email.js';
 export { FullName } from './value-objects/full-name.js';
 export { MembershipId } from './value-objects/membership-id.js';
 export { MembershipStatus } from './value-objects/membership-status.js';
+export { PermissionAssignmentId } from './value-objects/permission-assignment-id.js';
+export { PermissionAssignmentStatus } from './value-objects/permission-assignment-status.js';
+export { PermissionId } from './value-objects/permission-id.js';
+export { PermissionName } from './value-objects/permission-name.js';
 export { RoleAssignmentId } from './value-objects/role-assignment-id.js';
 export { RoleAssignmentStatus } from './value-objects/role-assignment-status.js';
 export { RoleId } from './value-objects/role-id.js';

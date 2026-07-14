@@ -84,14 +84,51 @@ model Credential {
   @@map("credentials")
 }
 
+enum PermissionAssignmentStatus {
+  ACTIVE
+  REMOVED
+}
+
+model Permission {
+  id                    String                 @id @default(uuid())
+  tenantId              String                 @map("tenant_id")
+  name                  String
+  normalizedName        String                 @map("normalized_name")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  permissionAssignments PermissionAssignment[]
+
+  @@unique([tenantId, normalizedName])
+  @@index([tenantId])
+  @@map("permissions")
+}
+
+model PermissionAssignment {
+  id            String                     @id @default(uuid())
+  roleId        String                     @map("role_id")
+  permissionId  String                     @map("permission_id")
+  status        PermissionAssignmentStatus @default(ACTIVE)
+  createdAt     DateTime                   @default(now()) @map("created_at")
+  reactivatedAt DateTime?                  @map("reactivated_at")
+  removedAt     DateTime?                  @map("removed_at")
+  role          Role                       @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  permission    Permission                 @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("permission_assignments")
+}
+
 model Role {
-  id              String           @id @default(uuid())
-  tenantId        String           @map("tenant_id")
-  name            String
-  normalizedName  String           @map("normalized_name")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  roleAssignments RoleAssignment[]
+  id                    String                 @id @default(uuid())
+  tenantId              String                 @map("tenant_id")
+  name                  String
+  normalizedName        String                 @map("normalized_name")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  roleAssignments       RoleAssignment[]
+  permissionAssignments PermissionAssignment[]
 
   @@unique([tenantId, normalizedName])
   @@index([tenantId])
@@ -134,6 +171,7 @@ model Tenant {
   updatedAt   DateTime     @updatedAt @map("updated_at")
   memberships Membership[]
   roles       Role[]
+  permissions Permission[]
 
   @@map("tenants")
 }
