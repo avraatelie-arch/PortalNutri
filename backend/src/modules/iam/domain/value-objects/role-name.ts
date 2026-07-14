@@ -3,8 +3,15 @@ import { DomainError } from '../errors/domain-error.js';
 const MIN_LENGTH = 2;
 const MAX_LENGTH = 200;
 
+function normalize(displayValue: string): string {
+  return displayValue.normalize('NFKC').replace(/\s+/g, ' ').toLowerCase();
+}
+
 export class RoleName {
-  private constructor(private readonly value: string) {}
+  private constructor(
+    private readonly displayValue: string,
+    private readonly canonicalValue: string,
+  ) {}
 
   static create(value: string): RoleName {
     const trimmed = value?.trim();
@@ -27,14 +34,26 @@ export class RoleName {
       );
     }
 
-    return new RoleName(collapsed);
+    return new RoleName(collapsed, normalize(trimmed));
+  }
+
+  get value(): string {
+    return this.displayValue;
+  }
+
+  /**
+   * Canonical form used for uniqueness checks and persistence:
+   * trim → Unicode NFKC → collapse internal whitespace → lowercase.
+   */
+  get normalizedValue(): string {
+    return this.canonicalValue;
   }
 
   equals(other: RoleName): boolean {
-    return this.value === other.value;
+    return this.canonicalValue === other.canonicalValue;
   }
 
   toString(): string {
-    return this.value;
+    return this.displayValue;
   }
 }

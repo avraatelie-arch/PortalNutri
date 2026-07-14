@@ -10,7 +10,7 @@ import type {
   AccessTokenClaims,
   IssuedAccessToken,
   TokenService,
-} from '../../application/services/token-service.port.js';
+} from '../../application/ports/token-service.port.js';
 import { InvalidAccessTokenError } from '../../application/errors/invalid-access-token.error.js';
 import { InvalidRefreshTokenError } from '../../application/errors/invalid-refresh-token.error.js';
 

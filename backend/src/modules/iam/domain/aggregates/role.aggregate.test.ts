@@ -46,4 +46,25 @@ describe('RoleName', () => {
   it('rejects empty values', () => {
     assert.throws(() => RoleName.create('   '), /RoleName is required/);
   });
+
+  it('keeps the display value casing while normalizing internally', () => {
+    const name = RoleName.create('  Clinic   Admin  ');
+
+    assert.equal(name.value, 'Clinic Admin');
+    assert.equal(name.normalizedValue, 'clinic admin');
+  });
+
+  it('treats case variants as the same normalized value', () => {
+    assert.equal(
+      RoleName.create('CLINIC ADMIN').normalizedValue,
+      RoleName.create('clinic admin').normalizedValue,
+    );
+  });
+
+  it('applies Unicode NFKC before collapsing whitespace', () => {
+    assert.equal(
+      RoleName.create('Ｃｌｉｎｉｃ\u00A0Ａｄｍｉｎ').normalizedValue,
+      'clinic admin',
+    );
+  });
 });

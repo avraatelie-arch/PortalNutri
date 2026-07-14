@@ -1,5 +1,5 @@
 import type { Argon2Config } from '../../../../config/argon2.js';
-import type { PasswordHasher } from '../../domain/services/password-hasher.port.js';
+import type { PasswordHasher } from '../../application/ports/password-hasher.port.js';
 
 export class Argon2PasswordHasher implements PasswordHasher {
   constructor(private readonly config: Argon2Config) {}

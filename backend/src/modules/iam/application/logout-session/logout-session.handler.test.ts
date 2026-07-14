@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import { DocumentType } from '../../domain/value-objects/document.js';
 import { SessionStatus } from '../../domain/value-objects/session-status.js';
 import { SessionId } from '../../domain/value-objects/session-id.js';
-import type { PasswordHasher } from '../../domain/services/password-hasher.port.js';
+import type { PasswordHasher } from '../ports/password-hasher.port.js';
 import { CreatePersonCommand } from '../create-person/create-person.command.js';
 import { CreatePersonHandler } from '../create-person/create-person.handler.js';
 import { RegisterCredentialCommand } from '../register-credential/register-credential.command.js';

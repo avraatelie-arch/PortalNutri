@@ -2,7 +2,6 @@ import type { RoleRepository } from '../../domain/repositories/role-repository.j
 import type { Role } from '../../domain/aggregates/role.aggregate.js';
 import type { RoleId } from '../../domain/value-objects/role-id.js';
 import type { TenantId } from '../../domain/value-objects/tenant-id.js';
-import { normalizeRoleNameForPersistence } from '../prisma/role-name-normalizer.js';
 
 export class InMemoryRoleRepository implements RoleRepository {
   private readonly roles = new Map<string, Role>();
@@ -22,8 +21,7 @@ export class InMemoryRoleRepository implements RoleRepository {
     for (const role of this.roles.values()) {
       if (
         role.getTenantId().equals(tenantId)
-        && normalizeRoleNameForPersistence(role.getName().toString())
-          === normalizedName
+        && role.getName().normalizedValue === normalizedName
       ) {
         return true;
       }

@@ -3,7 +3,6 @@ import { Role } from '../../domain/aggregates/role.aggregate.js';
 import { RoleId } from '../../domain/value-objects/role-id.js';
 import { RoleName } from '../../domain/value-objects/role-name.js';
 import { TenantId } from '../../domain/value-objects/tenant-id.js';
-import { normalizeRoleNameForPersistence } from './role-name-normalizer.js';
 
 export type RolePersistenceInput = {
   id: string;
@@ -14,13 +13,13 @@ export type RolePersistenceInput = {
 };
 
 export function toPersistence(role: Role): RolePersistenceInput {
-  const name = role.getName().toString();
+  const name = role.getName();
 
   return {
     id: role.getId().toString(),
     tenantId: role.getTenantId().toString(),
-    name,
-    normalizedName: normalizeRoleNameForPersistence(name),
+    name: name.value,
+    normalizedName: name.normalizedValue,
     createdAt: role.getCreatedAt(),
   };
 }

@@ -8,7 +8,7 @@ import { CredentialAlreadyExistsError } from '../errors/credential-already-exist
 import { PersonInactiveError } from '../errors/person-inactive.error.js';
 import { PersonNotFoundError } from '../errors/person-not-found.error.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
-import type { PasswordHasher } from '../../domain/services/password-hasher.port.js';
+import type { PasswordHasher } from '../ports/password-hasher.port.js';
 import { InMemoryCredentialRepository } from '../../infrastructure/repositories/in-memory-credential.repository.js';
 import { InMemoryPersonRepository } from '../../infrastructure/repositories/in-memory-person.repository.js';
 import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';

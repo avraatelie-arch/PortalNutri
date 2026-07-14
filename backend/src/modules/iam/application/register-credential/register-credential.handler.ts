@@ -1,6 +1,6 @@
 import type { CredentialRepository } from '../../domain/repositories/credential-repository.js';
 import type { PersonRepository } from '../../domain/repositories/person-repository.js';
-import type { PasswordHasher } from '../../domain/services/password-hasher.port.js';
+import type { PasswordHasher } from '../ports/password-hasher.port.js';
 import { Credential } from '../../domain/aggregates/credential.aggregate.js';
 import { PasswordHash } from '../../domain/value-objects/password-hash.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';

@@ -1,8 +1,8 @@
 import type { CredentialRepository } from '../../domain/repositories/credential-repository.js';
 import type { PersonRepository } from '../../domain/repositories/person-repository.js';
 import type { SessionRepository } from '../../domain/repositories/session-repository.js';
-import type { PasswordHasher } from '../../domain/services/password-hasher.port.js';
-import type { TokenService } from '../services/token-service.port.js';
+import type { PasswordHasher } from '../ports/password-hasher.port.js';
+import type { TokenService } from '../ports/token-service.port.js';
 import { Session } from '../../domain/aggregates/session.aggregate.js';
 import { Email } from '../../domain/value-objects/email.js';
 import { RefreshTokenFamilyId } from '../../domain/value-objects/refresh-token-family-id.js';

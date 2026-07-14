@@ -1,5 +1,5 @@
 import type { SessionRepository } from '../../domain/repositories/session-repository.js';
-import type { TokenService } from '../services/token-service.port.js';
+import type { TokenService } from '../ports/token-service.port.js';
 import { SessionId } from '../../domain/value-objects/session-id.js';
 import { executeUseCase } from '../execute-use-case.js';
 import { SessionNotFoundError } from '../errors/session-not-found.error.js';

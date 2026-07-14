@@ -4,7 +4,6 @@ import { Role } from '../../domain/aggregates/role.aggregate.js';
 import { RoleName } from '../../domain/value-objects/role-name.js';
 import { TenantId } from '../../domain/value-objects/tenant-id.js';
 import type { EventDispatcher } from '../../../../core/application/events/event-dispatcher.js';
-import { normalizeRoleNameForPersistence } from '../../infrastructure/prisma/role-name-normalizer.js';
 import { executeRoleUseCase } from '../execute-role-use-case.js';
 import { RoleNameAlreadyExistsError } from '../errors/role-name-already-exists.error.js';
 import { TenantInactiveError } from '../errors/tenant-inactive.error.js';
@@ -33,12 +32,11 @@ export class CreateRoleHandler {
       }
 
       const name = RoleName.create(command.request.name);
-      const normalizedName = normalizeRoleNameForPersistence(name.toString());
 
       if (
         await this.roleRepository.existsByTenantAndNormalizedName(
           tenantId,
-          normalizedName,
+          name.normalizedValue,
         )
       ) {
         throw new RoleNameAlreadyExistsError(

@@ -7,9 +7,9 @@ import { CreateTenantHandler } from '../../application/create-tenant/create-tena
 import { CreateRoleCommand } from '../../application/create-role/create-role.command.js';
 import { CreateRoleHandler } from '../../application/create-role/create-role.handler.js';
 import { RoleId } from '../../domain/value-objects/role-id.js';
+import { RoleName } from '../../domain/value-objects/role-name.js';
 import { TenantId } from '../../domain/value-objects/tenant-id.js';
 import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
-import { normalizeRoleNameForPersistence } from '../prisma/role-name-normalizer.js';
 import { PrismaRoleRepository } from './prisma-role.repository.js';
 import { PrismaTenantRepository } from './prisma-tenant.repository.js';
 
@@ -92,7 +92,7 @@ describe('PrismaRoleRepository (integration)', () => {
 
     const exists = await roleRepository.existsByTenantAndNormalizedName(
       TenantId.create(tenant.id),
-      normalizeRoleNameForPersistence('  clinic   admin  '),
+      RoleName.create('  clinic   admin  ').normalizedValue,
     );
 
     assert.equal(exists, true);

@@ -7,7 +7,7 @@ import { CredentialStatus } from '../../domain/value-objects/credential-status.j
 import { PasswordHash } from '../../domain/value-objects/password-hash.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
 import { SessionId } from '../../domain/value-objects/session-id.js';
-import type { PasswordHasher } from '../../domain/services/password-hasher.port.js';
+import type { PasswordHasher } from '../ports/password-hasher.port.js';
 import { CreatePersonCommand } from '../create-person/create-person.command.js';
 import { CreatePersonHandler } from '../create-person/create-person.handler.js';
 import { DeactivatePersonCommand } from '../deactivate-person/deactivate-person.command.js';

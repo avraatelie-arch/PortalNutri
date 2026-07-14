@@ -3,28 +3,15 @@ import type { Env } from '../../config/env.js';
 import { buildArgon2Config } from '../../config/argon2.js';
 import { buildJwtConfig } from '../../config/jwt.js';
 import { getPrismaClient } from '../../core/database/prisma-client.js';
-import { AuthenticatePersonHandler } from './application/authenticate-person/authenticate-person.handler.js';
-import { ActivateTenantHandler } from './application/activate-tenant/activate-tenant.handler.js';
-import { AddPersonToTenantHandler } from './application/add-person-to-tenant/add-person-to-tenant.handler.js';
-import { AssignRoleHandler } from './application/assign-role/assign-role.handler.js';
-import { CreatePersonHandler } from './application/create-person/create-person.handler.js';
-import { CreateRoleHandler } from './application/create-role/create-role.handler.js';
-import { CreateTenantHandler } from './application/create-tenant/create-tenant.handler.js';
-import { DeactivatePersonHandler } from './application/deactivate-person/deactivate-person.handler.js';
-import { DeactivateTenantHandler } from './application/deactivate-tenant/deactivate-tenant.handler.js';
-import { FindPersonByIdHandler } from './application/find-person-by-id/find-person-by-id.handler.js';
-import { FindMembershipHandler } from './application/find-membership/find-membership.handler.js';
-import { FindRoleAssignmentHandler } from './application/find-role-assignment/find-role-assignment.handler.js';
-import { FindRoleHandler } from './application/find-role/find-role.handler.js';
-import { FindTenantHandler } from './application/find-tenant/find-tenant.handler.js';
-import { LogoutSessionHandler } from './application/logout-session/logout-session.handler.js';
-import { RefreshSessionHandler } from './application/refresh-session/refresh-session.handler.js';
-import { RemovePersonFromTenantHandler } from './application/remove-person-from-tenant/remove-person-from-tenant.handler.js';
-import { RemoveRoleHandler } from './application/remove-role/remove-role.handler.js';
-import { RegisterCredentialHandler } from './application/register-credential/register-credential.handler.js';
-import { UpdatePersonHandler } from './application/update-person/update-person.handler.js';
-import { ValidateAccessTokenHandler } from './application/validate-access-token/validate-access-token.handler.js';
 import type { ValidateAccessTokenHandler as ValidateAccessTokenHandlerType } from './application/validate-access-token/validate-access-token.handler.js';
+import { createAuthenticationHandlers } from './composition/authentication.factory.js';
+import { createMembershipHandlers } from './composition/membership.factory.js';
+import type { MembershipHandlers } from './composition/membership.factory.js';
+import { createPersonHandlers } from './composition/person.factory.js';
+import { createRoleHandlers } from './composition/role.factory.js';
+import type { RoleHandlers } from './composition/role.factory.js';
+import { createTenantHandlers } from './composition/tenant.factory.js';
+import type { TenantHandlers } from './composition/tenant.factory.js';
 import { registerAuthRoutes } from './contracts/api/auth.routes.js';
 import type { AuthRouteHandlers } from './contracts/api/auth.routes.js';
 import { registerPersonRoutes } from './contracts/api/person.routes.js';
@@ -60,24 +47,9 @@ export interface IamDependencies {
     logoutSessionHandler: AuthRouteHandlers['logoutSessionHandler'];
     validateAccessTokenHandler: ValidateAccessTokenHandlerType;
   };
-  tenantHandlers: {
-    createTenantHandler: CreateTenantHandler;
-    findTenantHandler: FindTenantHandler;
-    activateTenantHandler: ActivateTenantHandler;
-    deactivateTenantHandler: DeactivateTenantHandler;
-  };
-  membershipHandlers: {
-    addPersonToTenantHandler: AddPersonToTenantHandler;
-    removePersonFromTenantHandler: RemovePersonFromTenantHandler;
-    findMembershipHandler: FindMembershipHandler;
-  };
-  roleHandlers: {
-    createRoleHandler: CreateRoleHandler;
-    findRoleHandler: FindRoleHandler;
-    assignRoleHandler: AssignRoleHandler;
-    removeRoleHandler: RemoveRoleHandler;
-    findRoleAssignmentHandler: FindRoleAssignmentHandler;
-  };
+  tenantHandlers: TenantHandlers;
+  membershipHandlers: MembershipHandlers;
+  roleHandlers: RoleHandlers;
 }
 
 export function createIamDependencies(env: Env): IamDependencies {
@@ -103,104 +75,48 @@ export function createIamDependencies(env: Env): IamDependencies {
     new InProcessEventBus(eventHandlerRegistry, new DefaultEventBusLogger()),
   );
 
+  const authenticationHandlers = createAuthenticationHandlers({
+    personRepository,
+    credentialRepository,
+    sessionRepository,
+    passwordHasher,
+    tokenService,
+    eventDispatcher,
+  });
+
   return {
     authorizationService: new DefaultAuthorizationService(),
     eventDispatcher,
-    personHandlers: {
-      createPersonHandler: new CreatePersonHandler(
-        personRepository,
-        eventDispatcher,
-      ),
-      findPersonByIdHandler: new FindPersonByIdHandler(personRepository),
-      updatePersonHandler: new UpdatePersonHandler(
-        personRepository,
-        eventDispatcher,
-      ),
-      deactivatePersonHandler: new DeactivatePersonHandler(
-        personRepository,
-        eventDispatcher,
-      ),
-    },
+    personHandlers: createPersonHandlers({
+      personRepository,
+      eventDispatcher,
+    }),
     authHandlers: {
-      registerCredentialHandler: new RegisterCredentialHandler(
-        personRepository,
-        credentialRepository,
-        passwordHasher,
-      ),
+      registerCredentialHandler: authenticationHandlers.registerCredentialHandler,
     },
     sessionHandlers: {
-      authenticatePersonHandler: new AuthenticatePersonHandler(
-        personRepository,
-        credentialRepository,
-        sessionRepository,
-        passwordHasher,
-        tokenService,
-        eventDispatcher,
-      ),
-      refreshSessionHandler: new RefreshSessionHandler(
-        sessionRepository,
-        tokenService,
-        eventDispatcher,
-      ),
-      logoutSessionHandler: new LogoutSessionHandler(
-        sessionRepository,
-        eventDispatcher,
-      ),
-      validateAccessTokenHandler: new ValidateAccessTokenHandler(
-        sessionRepository,
-        tokenService,
-      ),
+      authenticatePersonHandler: authenticationHandlers.authenticatePersonHandler,
+      refreshSessionHandler: authenticationHandlers.refreshSessionHandler,
+      logoutSessionHandler: authenticationHandlers.logoutSessionHandler,
+      validateAccessTokenHandler: authenticationHandlers.validateAccessTokenHandler,
     },
-    tenantHandlers: {
-      createTenantHandler: new CreateTenantHandler(
-        tenantRepository,
-        eventDispatcher,
-      ),
-      findTenantHandler: new FindTenantHandler(tenantRepository),
-      activateTenantHandler: new ActivateTenantHandler(
-        tenantRepository,
-        eventDispatcher,
-      ),
-      deactivateTenantHandler: new DeactivateTenantHandler(
-        tenantRepository,
-        eventDispatcher,
-      ),
-    },
-    membershipHandlers: {
-      addPersonToTenantHandler: new AddPersonToTenantHandler(
-        membershipRepository,
-        personRepository,
-        tenantRepository,
-        eventDispatcher,
-      ),
-      removePersonFromTenantHandler: new RemovePersonFromTenantHandler(
-        membershipRepository,
-        eventDispatcher,
-      ),
-      findMembershipHandler: new FindMembershipHandler(membershipRepository),
-    },
-    roleHandlers: {
-      createRoleHandler: new CreateRoleHandler(
-        roleRepository,
-        tenantRepository,
-        eventDispatcher,
-      ),
-      findRoleHandler: new FindRoleHandler(roleRepository),
-      assignRoleHandler: new AssignRoleHandler(
-        roleAssignmentRepository,
-        membershipRepository,
-        roleRepository,
-        eventDispatcher,
-      ),
-      removeRoleHandler: new RemoveRoleHandler(
-        roleAssignmentRepository,
-        membershipRepository,
-        eventDispatcher,
-      ),
-      findRoleAssignmentHandler: new FindRoleAssignmentHandler(
-        roleAssignmentRepository,
-      ),
-    },
+    tenantHandlers: createTenantHandlers({
+      tenantRepository,
+      eventDispatcher,
+    }),
+    membershipHandlers: createMembershipHandlers({
+      membershipRepository,
+      personRepository,
+      tenantRepository,
+      eventDispatcher,
+    }),
+    roleHandlers: createRoleHandlers({
+      roleRepository,
+      roleAssignmentRepository,
+      membershipRepository,
+      tenantRepository,
+      eventDispatcher,
+    }),
   };
 }
 
