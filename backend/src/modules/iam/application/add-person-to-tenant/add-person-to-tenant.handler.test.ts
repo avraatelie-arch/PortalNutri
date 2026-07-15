@@ -92,6 +92,7 @@ describe('AddPersonToTenantHandler', () => {
     assert.equal(response.status, MembershipStatus.Active);
     assert.equal(response.reactivatedAt, null);
     assert.equal(response.removedAt, null);
+    assert.equal(response.operation, 'CREATED');
   });
 
   it('reactivates a removed membership without creating a second row', async () => {
@@ -134,6 +135,7 @@ describe('AddPersonToTenantHandler', () => {
     assert.equal(reactivated.status, MembershipStatus.Active);
     assert.ok(reactivated.reactivatedAt);
     assert.equal(reactivated.removedAt, null);
+    assert.equal(reactivated.operation, 'REACTIVATED');
   });
 
   it('rejects an already active membership', async () => {

@@ -36,6 +36,7 @@ function isIamRoute(url: string): boolean {
     url.startsWith('/api/iam')
     || url.startsWith('/api/auth')
     || url.startsWith('/api/tenants')
+    || url.startsWith('/api/memberships')
   );
 }
 

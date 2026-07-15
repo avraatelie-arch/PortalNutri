@@ -38,7 +38,15 @@ export type TenantPermissionName =
   | 'TENANT_CREATE'
   | 'TENANT_UPDATE';
 
-export type IamPermissionName = PersonPermissionName | TenantPermissionName;
+export type MembershipPermissionName =
+  | 'MEMBERSHIP_READ'
+  | 'MEMBERSHIP_CREATE'
+  | 'MEMBERSHIP_DELETE';
+
+export type IamPermissionName =
+  | PersonPermissionName
+  | TenantPermissionName
+  | MembershipPermissionName;
 
 export interface RbacFixture {
   tenantId: string;
@@ -249,4 +257,7 @@ export function assertPermissionKeyNormalization(): void {
   assert.equal(AuthorizationPermissionKey.TENANT_READ, 'tenant_read');
   assert.equal(AuthorizationPermissionKey.TENANT_CREATE, 'tenant_create');
   assert.equal(AuthorizationPermissionKey.TENANT_UPDATE, 'tenant_update');
+  assert.equal(AuthorizationPermissionKey.MEMBERSHIP_READ, 'membership_read');
+  assert.equal(AuthorizationPermissionKey.MEMBERSHIP_CREATE, 'membership_create');
+  assert.equal(AuthorizationPermissionKey.MEMBERSHIP_DELETE, 'membership_delete');
 }

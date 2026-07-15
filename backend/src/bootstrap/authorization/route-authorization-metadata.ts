@@ -9,6 +9,9 @@ export interface ResourceRouteAuthorization {
   resource: AuthorizationResource;
   action: AuthorizationAction;
   resourceIdParam?: string;
+  scopeTenantIdFromBody?: string;
+  scopeTenantIdFromParam?: string;
+  resolveResourceTenantFromId?: boolean;
 }
 
 export type RouteAuthorizationMetadata =

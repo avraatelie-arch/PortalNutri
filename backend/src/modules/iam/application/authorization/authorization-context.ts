@@ -8,4 +8,6 @@ export interface AuthorizationContext {
   resource: AuthorizationResource;
   action: AuthorizationAction;
   resourceId: string | null;
+  scopeTenantId: string | null;
+  resourceTenantId: string | null;
 }

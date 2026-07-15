@@ -58,7 +58,7 @@ export class AddPersonToTenantHandler {
         await this.membershipRepository.save(membership);
         await this.eventDispatcher.dispatch(membership.pullDomainEvents());
 
-        return toAddPersonToTenantResponse(membership);
+        return toAddPersonToTenantResponse(membership, 'CREATED');
       }
 
       if (existing.isRemoved()) {
@@ -68,7 +68,7 @@ export class AddPersonToTenantHandler {
         await this.membershipRepository.save(existing);
         await this.eventDispatcher.dispatch(events);
 
-        return toAddPersonToTenantResponse(existing);
+        return toAddPersonToTenantResponse(existing, 'REACTIVATED');
       }
 
       throw new MembershipAlreadyExistsError(

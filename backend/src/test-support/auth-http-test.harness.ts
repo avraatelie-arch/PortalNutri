@@ -195,6 +195,24 @@ export async function grantTenantPermissions(
   return fixture.tenantId;
 }
 
+export async function grantMembershipPermissions(
+  personId: string,
+  sessionId: string,
+  permissions: Extract<
+    IamPermissionName,
+    'MEMBERSHIP_READ' | 'MEMBERSHIP_CREATE' | 'MEMBERSHIP_DELETE'
+  >[],
+): Promise<string> {
+  const fixture = await seedRbacFixture({
+    personId,
+    permissions,
+  });
+
+  await bindSessionTenant(sessionId, fixture.tenantId);
+
+  return fixture.tenantId;
+}
+
 export async function selectTenantForSession(
   app: FastifyInstance,
   accessToken: string,

@@ -11,6 +11,9 @@ export const AuthorizationPermissionKey = {
   TENANT_READ: PermissionName.create('TENANT_READ').normalizedValue,
   TENANT_CREATE: PermissionName.create('TENANT_CREATE').normalizedValue,
   TENANT_UPDATE: PermissionName.create('TENANT_UPDATE').normalizedValue,
+  MEMBERSHIP_READ: PermissionName.create('MEMBERSHIP_READ').normalizedValue,
+  MEMBERSHIP_CREATE: PermissionName.create('MEMBERSHIP_CREATE').normalizedValue,
+  MEMBERSHIP_DELETE: PermissionName.create('MEMBERSHIP_DELETE').normalizedValue,
 } as const;
 
 export function resolveAuthorizationPermissionKey(
@@ -39,6 +42,19 @@ export function resolveAuthorizationPermissionKey(
         return AuthorizationPermissionKey.TENANT_CREATE;
       case AuthorizationAction.UPDATE:
         return AuthorizationPermissionKey.TENANT_UPDATE;
+      default:
+        return null;
+    }
+  }
+
+  if (context.resource === AuthorizationResource.MEMBERSHIP) {
+    switch (context.action) {
+      case AuthorizationAction.READ:
+        return AuthorizationPermissionKey.MEMBERSHIP_READ;
+      case AuthorizationAction.CREATE:
+        return AuthorizationPermissionKey.MEMBERSHIP_CREATE;
+      case AuthorizationAction.DELETE:
+        return AuthorizationPermissionKey.MEMBERSHIP_DELETE;
       default:
         return null;
     }

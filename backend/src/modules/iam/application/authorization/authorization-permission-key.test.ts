@@ -18,6 +18,8 @@ function createContext(
     resource: AuthorizationResource.PERSON,
     action: AuthorizationAction.READ,
     resourceId: 'person-a',
+    scopeTenantId: null,
+    resourceTenantId: null,
     ...overrides,
   };
 }
@@ -100,6 +102,45 @@ describe('resolveAuthorizationPermissionKey', () => {
         createContext({
           resource: AuthorizationResource.TENANT,
           action: AuthorizationAction.DELETE,
+        }),
+      ),
+      null,
+    );
+  });
+
+  it('maps MEMBERSHIP actions to permission keys', () => {
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.MEMBERSHIP,
+          action: AuthorizationAction.READ,
+        }),
+      ),
+      AuthorizationPermissionKey.MEMBERSHIP_READ,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.MEMBERSHIP,
+          action: AuthorizationAction.CREATE,
+        }),
+      ),
+      AuthorizationPermissionKey.MEMBERSHIP_CREATE,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.MEMBERSHIP,
+          action: AuthorizationAction.DELETE,
+        }),
+      ),
+      AuthorizationPermissionKey.MEMBERSHIP_DELETE,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.MEMBERSHIP,
+          action: AuthorizationAction.UPDATE,
         }),
       ),
       null,

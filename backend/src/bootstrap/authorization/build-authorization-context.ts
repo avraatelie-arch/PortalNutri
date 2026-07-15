@@ -49,6 +49,42 @@ function resolveResourceId(
   return resourceId;
 }
 
+function resolveStringField(
+  source: unknown,
+  fieldName: string,
+): string | null {
+  if (typeof source !== 'object' || source === null || !(fieldName in source)) {
+    return null;
+  }
+
+  const value = (source as Record<string, unknown>)[fieldName];
+
+  if (typeof value !== 'string' || value.length === 0) {
+    return null;
+  }
+
+  return value;
+}
+
+function resolveScopeTenantId(
+  request: FastifyRequest,
+  metadata: RouteAuthorizationMetadata,
+): string | null {
+  if (isAuthenticatedOnlyMetadata(metadata)) {
+    return null;
+  }
+
+  if (metadata.scopeTenantIdFromBody !== undefined) {
+    return resolveStringField(request.body, metadata.scopeTenantIdFromBody);
+  }
+
+  if (metadata.scopeTenantIdFromParam !== undefined) {
+    return resolveResourceId(request, metadata.scopeTenantIdFromParam);
+  }
+
+  return null;
+}
+
 export function buildAuthorizationContext(
   request: FastifyRequest,
   metadata: RouteAuthorizationMetadata,
@@ -67,14 +103,31 @@ export function buildAuthorizationContext(
       resource: AuthorizationResource.PERSON,
       action: AuthorizationAction.EXECUTE,
       resourceId: null,
+      scopeTenantId: null,
+      resourceTenantId: null,
     };
   }
 
   const resourceId = resolveResourceId(request, metadata.resourceIdParam);
+  const scopeTenantId = resolveScopeTenantId(request, metadata);
 
   if (
     metadata.resourceIdParam !== undefined
     && resourceId === null
+  ) {
+    return null;
+  }
+
+  if (
+    metadata.scopeTenantIdFromBody !== undefined
+    && scopeTenantId === null
+  ) {
+    return null;
+  }
+
+  if (
+    metadata.scopeTenantIdFromParam !== undefined
+    && scopeTenantId === null
   ) {
     return null;
   }
@@ -86,5 +139,7 @@ export function buildAuthorizationContext(
     resource: metadata.resource,
     action: metadata.action,
     resourceId,
+    scopeTenantId,
+    resourceTenantId: null,
   };
 }

@@ -31,6 +31,8 @@ describe('buildAuthorizationContext', () => {
       resource: AuthorizationResource.PERSON,
       action: AuthorizationAction.EXECUTE,
       resourceId: null,
+      scopeTenantId: null,
+      resourceTenantId: null,
     });
   });
 
@@ -48,6 +50,8 @@ describe('buildAuthorizationContext', () => {
       resource: AuthorizationResource.PERSON,
       action: AuthorizationAction.READ,
       resourceId: 'person-a',
+      scopeTenantId: null,
+      resourceTenantId: null,
     });
   });
 
@@ -69,6 +73,73 @@ describe('buildAuthorizationContext', () => {
         resource: AuthorizationResource.PERSON,
         action: AuthorizationAction.READ,
         resourceIdParam: 'id',
+      },
+    );
+
+    assert.equal(context, null);
+  });
+
+  it('extracts scope tenant id from request body', () => {
+    const context = buildAuthorizationContext(
+      createRequest({
+        body: {
+          personId: 'person-b',
+          tenantId: 'tenant-b',
+        },
+      }),
+      {
+        resource: AuthorizationResource.MEMBERSHIP,
+        action: AuthorizationAction.CREATE,
+        scopeTenantIdFromBody: 'tenantId',
+      },
+    );
+
+    assert.deepEqual(context, {
+      personId: 'person-a',
+      sessionId: 'session-a',
+      tenantId: null,
+      resource: AuthorizationResource.MEMBERSHIP,
+      action: AuthorizationAction.CREATE,
+      resourceId: null,
+      scopeTenantId: 'tenant-b',
+      resourceTenantId: null,
+    });
+  });
+
+  it('extracts scope tenant id from route params', () => {
+    const context = buildAuthorizationContext(
+      createRequest({
+        params: {
+          personId: 'person-b',
+          tenantId: 'tenant-b',
+        },
+      }),
+      {
+        resource: AuthorizationResource.MEMBERSHIP,
+        action: AuthorizationAction.DELETE,
+        scopeTenantIdFromParam: 'tenantId',
+      },
+    );
+
+    assert.deepEqual(context, {
+      personId: 'person-a',
+      sessionId: 'session-a',
+      tenantId: null,
+      resource: AuthorizationResource.MEMBERSHIP,
+      action: AuthorizationAction.DELETE,
+      resourceId: null,
+      scopeTenantId: 'tenant-b',
+      resourceTenantId: null,
+    });
+  });
+
+  it('returns null when required scope tenant body field is missing', () => {
+    const context = buildAuthorizationContext(
+      createRequest({ body: { personId: 'person-b' } }),
+      {
+        resource: AuthorizationResource.MEMBERSHIP,
+        action: AuthorizationAction.CREATE,
+        scopeTenantIdFromBody: 'tenantId',
       },
     );
 

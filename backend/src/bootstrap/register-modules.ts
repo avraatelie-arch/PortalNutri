@@ -6,6 +6,7 @@ import {
   createIamDependencies,
   registerAuthModule,
   registerIamModule,
+  registerMembershipModule,
   registerTenantModule,
 } from '../modules/iam/iam.module.js';
 import {
@@ -46,6 +47,7 @@ export async function registerModules(
         { prefix: '/auth' },
       );
       await registerTenantModule(api, dependencies.tenantHandlers);
+      await registerMembershipModule(api, dependencies.membershipHandlers);
     },
     { prefix: '/api' },
   );
