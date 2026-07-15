@@ -18,6 +18,7 @@ import { TEST_JWT_SECRET } from './jwt-test.config.js';
 import {
   bindSessionTenant,
   seedRbacFixture,
+  type IamPermissionName,
   type PersonPermissionName,
 } from './rbac-test.harness.js';
 
@@ -165,6 +166,24 @@ export async function grantPersonPermissions(
   personId: string,
   sessionId: string,
   permissions: PersonPermissionName[],
+): Promise<string> {
+  const fixture = await seedRbacFixture({
+    personId,
+    permissions,
+  });
+
+  await bindSessionTenant(sessionId, fixture.tenantId);
+
+  return fixture.tenantId;
+}
+
+export async function grantTenantPermissions(
+  personId: string,
+  sessionId: string,
+  permissions: Extract<
+    IamPermissionName,
+    'TENANT_READ' | 'TENANT_CREATE' | 'TENANT_UPDATE'
+  >[],
 ): Promise<string> {
   const fixture = await seedRbacFixture({
     personId,

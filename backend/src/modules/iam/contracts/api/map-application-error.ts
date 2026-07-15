@@ -2,6 +2,9 @@ import { PersonDocumentAlreadyExistsError } from '../../application/errors/perso
 import { PersonEmailAlreadyExistsError } from '../../application/errors/person-email-already-exists.error.js';
 import { PersonNotFoundError } from '../../application/errors/person-not-found.error.js';
 import { PersonValidationError } from '../../application/errors/person-validation.error.js';
+import { TenantNotFoundError } from '../../application/errors/tenant-not-found.error.js';
+import { TenantSlugAlreadyExistsError } from '../../application/errors/tenant-slug-already-exists.error.js';
+import { TenantValidationError } from '../../application/errors/tenant-validation.error.js';
 
 export interface HttpErrorResponse {
   statusCode: number;
@@ -37,6 +40,30 @@ export function mapApplicationErrorToHttp(error: unknown): HttpErrorResponse {
   }
 
   if (error instanceof PersonValidationError) {
+    return {
+      statusCode: 400,
+      error: 'Bad Request',
+      message: error.message,
+    };
+  }
+
+  if (error instanceof TenantNotFoundError) {
+    return {
+      statusCode: 404,
+      error: 'Not Found',
+      message: error.message,
+    };
+  }
+
+  if (error instanceof TenantSlugAlreadyExistsError) {
+    return {
+      statusCode: 409,
+      error: 'Conflict',
+      message: error.message,
+    };
+  }
+
+  if (error instanceof TenantValidationError) {
     return {
       statusCode: 400,
       error: 'Bad Request',

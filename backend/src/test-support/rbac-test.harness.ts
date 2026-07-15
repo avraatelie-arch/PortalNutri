@@ -33,11 +33,18 @@ export type PersonPermissionName =
   | 'PERSON_UPDATE'
   | 'PERSON_DELETE';
 
+export type TenantPermissionName =
+  | 'TENANT_READ'
+  | 'TENANT_CREATE'
+  | 'TENANT_UPDATE';
+
+export type IamPermissionName = PersonPermissionName | TenantPermissionName;
+
 export interface RbacFixture {
   tenantId: string;
   membershipId: string;
   roleId: string;
-  permissionIds: Partial<Record<PersonPermissionName, string>>;
+  permissionIds: Partial<Record<IamPermissionName, string>>;
 }
 
 export interface ResetIamDataOptions {
@@ -81,7 +88,7 @@ export async function bindSessionTenant(
 
 export async function seedRbacFixture(params: {
   personId: string;
-  permissions: PersonPermissionName[];
+  permissions: IamPermissionName[];
   membershipActive?: boolean;
   assignRole?: boolean;
   grantPermissions?: boolean;
@@ -157,7 +164,7 @@ export async function seedRbacFixture(params: {
     );
   }
 
-  const permissionIds: Partial<Record<PersonPermissionName, string>> = {};
+  const permissionIds: Partial<Record<IamPermissionName, string>> = {};
 
   for (const permissionName of params.permissions) {
     const permission = await new CreatePermissionHandler(
@@ -239,4 +246,7 @@ export function assertPermissionKeyNormalization(): void {
   assert.equal(AuthorizationPermissionKey.PERSON_CREATE, 'person_create');
   assert.equal(AuthorizationPermissionKey.PERSON_UPDATE, 'person_update');
   assert.equal(AuthorizationPermissionKey.PERSON_DELETE, 'person_delete');
+  assert.equal(AuthorizationPermissionKey.TENANT_READ, 'tenant_read');
+  assert.equal(AuthorizationPermissionKey.TENANT_CREATE, 'tenant_create');
+  assert.equal(AuthorizationPermissionKey.TENANT_UPDATE, 'tenant_update');
 }

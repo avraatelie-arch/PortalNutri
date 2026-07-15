@@ -32,7 +32,11 @@ function isHealthRoute(url: string): boolean {
 }
 
 function isIamRoute(url: string): boolean {
-  return url.startsWith('/api/iam') || url.startsWith('/api/auth');
+  return (
+    url.startsWith('/api/iam')
+    || url.startsWith('/api/auth')
+    || url.startsWith('/api/tenants')
+  );
 }
 
 function isPublicAuthRoute(url: string): boolean {

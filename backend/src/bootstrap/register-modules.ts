@@ -6,6 +6,7 @@ import {
   createIamDependencies,
   registerAuthModule,
   registerIamModule,
+  registerTenantModule,
 } from '../modules/iam/iam.module.js';
 import {
   registerDeprecatedHealthAlias,
@@ -44,6 +45,7 @@ export async function registerModules(
           }),
         { prefix: '/auth' },
       );
+      await registerTenantModule(api, dependencies.tenantHandlers);
     },
     { prefix: '/api' },
   );

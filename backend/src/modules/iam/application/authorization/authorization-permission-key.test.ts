@@ -66,4 +66,43 @@ describe('resolveAuthorizationPermissionKey', () => {
       null,
     );
   });
+
+  it('maps TENANT actions to permission keys', () => {
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.TENANT,
+          action: AuthorizationAction.READ,
+        }),
+      ),
+      AuthorizationPermissionKey.TENANT_READ,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.TENANT,
+          action: AuthorizationAction.CREATE,
+        }),
+      ),
+      AuthorizationPermissionKey.TENANT_CREATE,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.TENANT,
+          action: AuthorizationAction.UPDATE,
+        }),
+      ),
+      AuthorizationPermissionKey.TENANT_UPDATE,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.TENANT,
+          action: AuthorizationAction.DELETE,
+        }),
+      ),
+      null,
+    );
+  });
 });

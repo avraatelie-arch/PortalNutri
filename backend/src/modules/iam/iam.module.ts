@@ -18,6 +18,8 @@ import { registerAuthRoutes } from './contracts/api/auth.routes.js';
 import type { AuthRouteHandlers } from './contracts/api/auth.routes.js';
 import { registerPersonRoutes } from './contracts/api/person.routes.js';
 import type { PersonRouteHandlers } from './contracts/api/person.routes.js';
+import { registerTenantRoutes } from './contracts/api/tenant.routes.js';
+import type { TenantRouteHandlers } from './contracts/api/tenant.routes.js';
 import { Argon2PasswordHasher } from './infrastructure/cryptography/argon2-password-hasher.js';
 import { PrismaCredentialRepository } from './infrastructure/repositories/prisma-credential.repository.js';
 import { PrismaMembershipRepository } from './infrastructure/repositories/prisma-membership.repository.js';
@@ -149,6 +151,13 @@ export async function registerIamModule(
   handlers: PersonRouteHandlers,
 ): Promise<void> {
   await registerPersonRoutes(app, handlers);
+}
+
+export async function registerTenantModule(
+  app: FastifyInstance,
+  handlers: TenantRouteHandlers,
+): Promise<void> {
+  await registerTenantRoutes(app, handlers);
 }
 
 export async function registerAuthModule(

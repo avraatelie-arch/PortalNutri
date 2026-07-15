@@ -2,6 +2,7 @@ import { AuthorizationEngine } from '../application/authorization/authorization-
 import type { AuthorizationService } from '../application/authorization/authorization.service.js';
 import { AuthenticatedOnlyPolicy } from '../application/authorization/policies/authenticated-only.policy.js';
 import { RbacPermissionPolicy } from '../application/authorization/policies/rbac-permission.policy.js';
+import { TenantResourceScopePolicy } from '../application/authorization/policies/tenant-resource-scope.policy.js';
 import type { MembershipRepository } from '../domain/repositories/membership-repository.js';
 import type { PermissionAssignmentRepository } from '../domain/repositories/permission-assignment-repository.js';
 import type { PermissionRepository } from '../domain/repositories/permission-repository.js';
@@ -26,6 +27,7 @@ export function createAuthorizationService(
   );
 
   const engine = new AuthorizationEngine([
+    new TenantResourceScopePolicy(),
     new RbacPermissionPolicy(),
     new AuthenticatedOnlyPolicy(),
   ]);
