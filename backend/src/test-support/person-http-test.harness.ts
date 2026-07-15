@@ -4,6 +4,7 @@ import { configureIntegrationTestEnv } from '../config/test-env.js';
 
 export { requireDatabaseUrl } from '../config/test-env.js';
 import { getPrismaClient } from '../core/database/prisma-client.js';
+import { resetIamData } from './rbac-test.harness.js';
 import { Person } from '../modules/iam/domain/aggregates/person.aggregate.js';
 import { DocumentType } from '../modules/iam/domain/value-objects/document.js';
 import { BirthDate } from '../modules/iam/domain/value-objects/birth-date.js';
@@ -43,10 +44,7 @@ export async function createPersonHttpTestApp(): Promise<FastifyInstance> {
 }
 
 export async function resetPersons(): Promise<void> {
-  const prisma = getPrismaClient();
-  await prisma.session.deleteMany();
-  await prisma.credential.deleteMany();
-  await prisma.person.deleteMany();
+  await resetIamData({ includeTenants: false });
 }
 
 export function nextFixtureSuffix(): string {

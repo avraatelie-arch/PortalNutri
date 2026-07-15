@@ -34,4 +34,18 @@ export class InMemoryPermissionAssignmentRepository
 
     return null;
   }
+
+  async findActiveByRoleId(
+    roleId: RoleId,
+  ): Promise<PermissionAssignment[]> {
+    const assignments: PermissionAssignment[] = [];
+
+    for (const assignment of this.assignments.values()) {
+      if (assignment.getRoleId().equals(roleId) && assignment.isActive()) {
+        assignments.push(assignment);
+      }
+    }
+
+    return assignments;
+  }
 }

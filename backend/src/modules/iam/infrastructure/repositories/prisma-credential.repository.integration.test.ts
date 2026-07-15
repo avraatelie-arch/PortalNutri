@@ -13,6 +13,7 @@ import { Argon2PasswordHasher } from '../cryptography/argon2-password-hasher.js'
 import { PrismaCredentialRepository } from './prisma-credential.repository.js';
 import { PrismaPersonRepository } from './prisma-person.repository.js';
 import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
+import { resetIamData } from '../../../../test-support/rbac-test.harness.js';
 
 requireDatabaseUrl();
 
@@ -26,9 +27,7 @@ const passwordHasher = new Argon2PasswordHasher({
 });
 
 async function resetAuthData() {
-  await prisma.session.deleteMany();
-  await prisma.credential.deleteMany();
-  await prisma.person.deleteMany();
+  await resetIamData({ includeTenants: false });
 }
 
 describe('PrismaCredentialRepository (integration)', () => {

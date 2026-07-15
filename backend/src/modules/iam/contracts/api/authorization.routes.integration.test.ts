@@ -12,10 +12,16 @@ import {
   withBearerToken,
 } from '../../../../test-support/auth-http-test.harness.js';
 import {
-  resetPersons,
   seedPersonFixture,
   validCreatePersonPayload,
 } from '../../../../test-support/person-http-test.harness.js';
+import {
+  bindSessionTenant,
+  resetRbacFixtures,
+  revokeGrantedPermission,
+  seedRbacFixture,
+  seedTenantOnly,
+} from '../../../../test-support/rbac-test.harness.js';
 
 requireDatabaseUrl();
 
@@ -41,16 +47,18 @@ describe('Authorization HTTP (integration)', () => {
   let app: FastifyInstance;
   let accessToken: string;
   let authenticatedPersonId: string;
+  let sessionId: string;
 
   before(async () => {
     app = await createAuthHttpTestApp();
   });
 
   beforeEach(async () => {
-    await resetPersons();
+    await resetRbacFixtures();
     const auth = await seedAuthenticatedFixture(app);
     accessToken = auth.tokens.accessToken;
     authenticatedPersonId = auth.personId;
+    sessionId = auth.tokens.sessionId;
   });
 
   after(async () => {
@@ -63,8 +71,32 @@ describe('Authorization HTTP (integration)', () => {
     return injectJson(app, withBearerToken(accessToken, options));
   }
 
-  describe('self Person access', () => {
-    it('allows GET on own Person', async () => {
+  async function authorizePersonWithPermissions(
+    permissions: Array<'PERSON_READ' | 'PERSON_UPDATE' | 'PERSON_DELETE' | 'PERSON_CREATE'>,
+    options?: {
+      membershipActive?: boolean;
+      assignRole?: boolean;
+      grantPermissions?: boolean;
+      tenantId?: string;
+    },
+  ) {
+    const fixture = await seedRbacFixture({
+      personId: authenticatedPersonId,
+      permissions,
+      membershipActive: options?.membershipActive,
+      assignRole: options?.assignRole,
+      grantPermissions: options?.grantPermissions,
+    });
+
+    await bindSessionTenant(sessionId, options?.tenantId ?? fixture.tenantId);
+
+    return fixture;
+  }
+
+  describe('RBAC Person access', () => {
+    it('allows GET when PERSON_READ is granted', async () => {
+      await authorizePersonWithPermissions(['PERSON_READ']);
+
       const response = await authorizedInject({
         method: 'GET',
         url: `/api/iam/persons/${authenticatedPersonId}`,
@@ -77,12 +109,14 @@ describe('Authorization HTTP (integration)', () => {
       assert.equal(body.id, authenticatedPersonId);
     });
 
-    it('allows PUT on own Person', async () => {
+    it('allows PUT when PERSON_UPDATE is granted', async () => {
+      await authorizePersonWithPermissions(['PERSON_UPDATE']);
+
       const response = await authorizedInject({
         method: 'PUT',
         url: `/api/iam/persons/${authenticatedPersonId}`,
         payload: {
-          fullName: 'Updated Self Name',
+          fullName: 'Updated RBAC Name',
         },
       });
 
@@ -90,10 +124,12 @@ describe('Authorization HTTP (integration)', () => {
 
       const body = response.body as { fullName?: string };
 
-      assert.equal(body.fullName, 'Updated Self Name');
+      assert.equal(body.fullName, 'Updated RBAC Name');
     });
 
-    it('allows DELETE on own Person', async () => {
+    it('allows DELETE when PERSON_DELETE is granted', async () => {
+      await authorizePersonWithPermissions(['PERSON_DELETE']);
+
       const response = await authorizedInject({
         method: 'DELETE',
         url: `/api/iam/persons/${authenticatedPersonId}`,
@@ -105,10 +141,109 @@ describe('Authorization HTTP (integration)', () => {
 
       assert.equal(body.status, 'INACTIVE');
     });
-  });
 
-  describe('cross-principal Person access', () => {
-    it('returns 403 for GET on another Person', async () => {
+    it('returns 403 when PERSON_READ is not granted', async () => {
+      await authorizePersonWithPermissions([]);
+
+      const response = await authorizedInject({
+        method: 'GET',
+        url: `/api/iam/persons/${authenticatedPersonId}`,
+      });
+
+      assert.equal(response.statusCode, 403);
+      assertForbidden(response.body);
+    });
+
+    it('returns 403 when membership is missing', async () => {
+      const tenantId = await seedTenantOnly(`no-membership-${Date.now()}`);
+      await bindSessionTenant(sessionId, tenantId);
+
+      const response = await authorizedInject({
+        method: 'GET',
+        url: `/api/iam/persons/${authenticatedPersonId}`,
+      });
+
+      assert.equal(response.statusCode, 403);
+      assertForbidden(response.body);
+    });
+
+    it('returns 403 when membership is inactive', async () => {
+      await authorizePersonWithPermissions(['PERSON_READ'], {
+        membershipActive: false,
+      });
+
+      const response = await authorizedInject({
+        method: 'GET',
+        url: `/api/iam/persons/${authenticatedPersonId}`,
+      });
+
+      assert.equal(response.statusCode, 403);
+      assertForbidden(response.body);
+    });
+
+    it('returns 403 when role assignment is missing', async () => {
+      await authorizePersonWithPermissions(['PERSON_READ'], {
+        assignRole: false,
+      });
+
+      const response = await authorizedInject({
+        method: 'GET',
+        url: `/api/iam/persons/${authenticatedPersonId}`,
+      });
+
+      assert.equal(response.statusCode, 403);
+      assertForbidden(response.body);
+    });
+
+    it('returns 403 when permission assignment is missing', async () => {
+      await authorizePersonWithPermissions(['PERSON_READ'], {
+        grantPermissions: false,
+      });
+
+      const response = await authorizedInject({
+        method: 'GET',
+        url: `/api/iam/persons/${authenticatedPersonId}`,
+      });
+
+      assert.equal(response.statusCode, 403);
+      assertForbidden(response.body);
+    });
+
+    it('returns 403 when permission assignment is inactive', async () => {
+      const fixture = await authorizePersonWithPermissions(['PERSON_READ']);
+
+      await revokeGrantedPermission({
+        roleId: fixture.roleId,
+        permissionId: fixture.permissionIds.PERSON_READ!,
+      });
+
+      const response = await authorizedInject({
+        method: 'GET',
+        url: `/api/iam/persons/${authenticatedPersonId}`,
+      });
+
+      assert.equal(response.statusCode, 403);
+      assertForbidden(response.body);
+    });
+
+    it('returns 403 for cross-tenant denial', async () => {
+      await authorizePersonWithPermissions(['PERSON_READ']);
+      const otherTenantId = await seedTenantOnly(`other-tenant-${Date.now()}`);
+
+      await bindSessionTenant(sessionId, otherTenantId);
+
+      const response = await authorizedInject({
+        method: 'GET',
+        url: `/api/iam/persons/${authenticatedPersonId}`,
+      });
+
+      assert.equal(response.statusCode, 403);
+      assertForbidden(response.body);
+    });
+
+    it('allows GET on another person when PERSON_READ is granted', async () => {
+      await authorizePersonWithPermissions(['PERSON_READ']);
+
       const other = await seedPersonFixture({
         documentValue: 'AUTHZ001',
       });
@@ -118,54 +253,14 @@ describe('Authorization HTTP (integration)', () => {
         url: `/api/iam/persons/${other.personId}`,
       });
 
-      assert.equal(response.statusCode, 403);
-      assertForbidden(response.body);
-    });
-
-    it('returns 403 for PUT on another Person', async () => {
-      const other = await seedPersonFixture({
-        documentValue: 'AUTHZ002',
-      });
-
-      const response = await authorizedInject({
-        method: 'PUT',
-        url: `/api/iam/persons/${other.personId}`,
-        payload: {
-          fullName: 'Forbidden Update',
-        },
-      });
-
-      assert.equal(response.statusCode, 403);
-      assertForbidden(response.body);
-    });
-
-    it('returns 403 for DELETE on another Person', async () => {
-      const other = await seedPersonFixture({
-        documentValue: 'AUTHZ003',
-      });
-
-      const response = await authorizedInject({
-        method: 'DELETE',
-        url: `/api/iam/persons/${other.personId}`,
-      });
-
-      assert.equal(response.statusCode, 403);
-      assertForbidden(response.body);
-    });
-
-    it('returns 403 for GET on a nonexistent Person id', async () => {
-      const response = await authorizedInject({
-        method: 'GET',
-        url: `/api/iam/persons/${UNKNOWN_PERSON_ID}`,
-      });
-
-      assert.equal(response.statusCode, 403);
-      assertForbidden(response.body);
+      assert.equal(response.statusCode, 200);
     });
   });
 
   describe('Person creation', () => {
-    it('returns 403 for POST Person by authenticated user', async () => {
+    it('returns 403 for POST Person without PERSON_CREATE', async () => {
+      await authorizePersonWithPermissions(['PERSON_READ']);
+
       const response = await authorizedInject({
         method: 'POST',
         url: '/api/iam/persons',
@@ -174,6 +269,18 @@ describe('Authorization HTTP (integration)', () => {
 
       assert.equal(response.statusCode, 403);
       assertForbidden(response.body);
+    });
+
+    it('allows POST Person when PERSON_CREATE is granted', async () => {
+      await authorizePersonWithPermissions(['PERSON_CREATE']);
+
+      const response = await authorizedInject({
+        method: 'POST',
+        url: '/api/iam/persons',
+        payload: validCreatePersonPayload(),
+      });
+
+      assert.equal(response.statusCode, 201);
     });
   });
 
@@ -199,7 +306,7 @@ describe('Authorization HTTP (integration)', () => {
       );
 
       try {
-        await resetPersons();
+        await resetRbacFixtures();
         const auth = await seedAuthenticatedFixture(isolatedApp);
 
         const response = await injectJson(
@@ -299,6 +406,29 @@ describe('Authorization HTTP (integration)', () => {
       finally {
         await docsApp.close();
       }
+    });
+  });
+
+  describe('nonexistent resource', () => {
+    it('returns 403 for GET on a nonexistent Person id without permission', async () => {
+      const response = await authorizedInject({
+        method: 'GET',
+        url: `/api/iam/persons/${UNKNOWN_PERSON_ID}`,
+      });
+
+      assert.equal(response.statusCode, 403);
+      assertForbidden(response.body);
+    });
+
+    it('returns 404 for GET on a nonexistent Person id with PERSON_READ', async () => {
+      await authorizePersonWithPermissions(['PERSON_READ']);
+
+      const response = await authorizedInject({
+        method: 'GET',
+        url: `/api/iam/persons/${UNKNOWN_PERSON_ID}`,
+      });
+
+      assert.equal(response.statusCode, 404);
     });
   });
 });

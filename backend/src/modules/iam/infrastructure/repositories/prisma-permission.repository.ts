@@ -48,4 +48,20 @@ export class PrismaPermissionRepository implements PermissionRepository {
 
     return record !== null;
   }
+
+  async findByTenantAndNormalizedName(
+    tenantId: TenantId,
+    normalizedName: string,
+  ): Promise<Permission | null> {
+    const record = await this.prisma.permission.findUnique({
+      where: {
+        tenantId_normalizedName: {
+          tenantId: tenantId.toString(),
+          normalizedName,
+        },
+      },
+    });
+
+    return record ? toDomain(record) : null;
+  }
 }

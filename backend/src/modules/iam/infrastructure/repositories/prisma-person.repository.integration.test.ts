@@ -14,6 +14,7 @@ import { Email } from '../../domain/value-objects/email.js';
 import { PersonId } from '../../domain/value-objects/person-id.js';
 import { PersonStatus } from '../../domain/value-objects/person-status.js';
 import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
+import { resetIamData } from '../../../../test-support/rbac-test.harness.js';
 import { PrismaPersonRepository } from './prisma-person.repository.js';
 
 requireDatabaseUrl();
@@ -22,14 +23,7 @@ const prisma = new PrismaClient();
 const repository = new PrismaPersonRepository(prisma);
 
 async function resetPersons() {
-  await prisma.permissionAssignment.deleteMany();
-  await prisma.permission.deleteMany();
-  await prisma.roleAssignment.deleteMany();
-  await prisma.role.deleteMany();
-  await prisma.membership.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.credential.deleteMany();
-  await prisma.person.deleteMany();
+  await resetIamData({ includeTenants: false });
 }
 
 describe('PrismaPersonRepository (integration)', () => {

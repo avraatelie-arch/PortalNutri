@@ -53,4 +53,17 @@ export class PrismaPermissionAssignmentRepository
 
     return record ? toDomain(record) : null;
   }
+
+  async findActiveByRoleId(
+    roleId: RoleId,
+  ): Promise<PermissionAssignment[]> {
+    const records = await this.prisma.permissionAssignment.findMany({
+      where: {
+        roleId: roleId.toString(),
+        status: 'ACTIVE',
+      },
+    });
+
+    return records.map(toDomain);
+  }
 }

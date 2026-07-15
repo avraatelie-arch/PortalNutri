@@ -7,14 +7,17 @@ import {
   createPersonHttpTestApp,
   injectJson,
   requireDatabaseUrl,
-  resetPersons,
   seedPersonFixture,
   validCreatePersonPayload,
 } from '../../../../test-support/person-http-test.harness.js';
 import {
+  grantPersonPermissions,
   seedAuthenticatedFixture,
   withBearerToken,
 } from '../../../../test-support/auth-http-test.harness.js';
+import {
+  resetRbacFixtures,
+} from '../../../../test-support/rbac-test.harness.js';
 
 requireDatabaseUrl();
 
@@ -32,16 +35,18 @@ describe('Person HTTP routes (integration)', () => {
   let app: FastifyInstance;
   let accessToken: string;
   let authenticatedPersonId: string;
+  let sessionId: string;
 
   before(async () => {
     app = await createPersonHttpTestApp();
   });
 
   beforeEach(async () => {
-    await resetPersons();
+    await resetRbacFixtures();
     const auth = await seedAuthenticatedFixture(app);
     accessToken = auth.tokens.accessToken;
     authenticatedPersonId = auth.personId;
+    sessionId = auth.tokens.sessionId;
   });
 
   after(async () => {
@@ -54,8 +59,20 @@ describe('Person HTTP routes (integration)', () => {
     return injectJson(app, withBearerToken(accessToken, options));
   }
 
+  async function authorizePerson(
+    permissions: Array<'PERSON_READ' | 'PERSON_CREATE' | 'PERSON_UPDATE' | 'PERSON_DELETE'>,
+  ) {
+    await grantPersonPermissions(
+      authenticatedPersonId,
+      sessionId,
+      permissions,
+    );
+  }
+
   describe('POST /api/iam/persons', () => {
-    it('returns 403 for authenticated users', async () => {
+    it('returns 403 without PERSON_CREATE', async () => {
+      await authorizePerson(['PERSON_READ']);
+
       const response = await authorizedInject({
         method: 'POST',
         url: '/api/iam/persons',
@@ -67,6 +84,8 @@ describe('Person HTTP routes (integration)', () => {
     });
 
     it('returns 400 for invalid payload', async () => {
+      await authorizePerson(['PERSON_CREATE']);
+
       const response = await authorizedInject({
         method: 'POST',
         url: '/api/iam/persons',
@@ -91,6 +110,8 @@ describe('Person HTTP routes (integration)', () => {
 
   describe('GET /api/iam/persons/:id', () => {
     it('returns the authenticated person', async () => {
+      await authorizePerson(['PERSON_READ']);
+
       const response = await authorizedInject({
         method: 'GET',
         url: `/api/iam/persons/${authenticatedPersonId}`,
@@ -105,6 +126,8 @@ describe('Person HTTP routes (integration)', () => {
     });
 
     it('returns 400 for invalid id', async () => {
+      await authorizePerson(['PERSON_READ']);
+
       const response = await authorizedInject({
         method: 'GET',
         url: '/api/iam/persons/not-a-uuid',
@@ -113,36 +136,32 @@ describe('Person HTTP routes (integration)', () => {
       assert.equal(response.statusCode, 400);
     });
 
-    it('returns 403 when accessing another person', async () => {
-      const other = await seedPersonFixture({
-        fullName: 'João Santos',
-        email: 'joao.santos@example.com',
-        documentType: DocumentType.PASSPORT,
-        documentValue: 'GET123456',
-      });
-
+    it('returns 403 when PERSON_READ is not granted', async () => {
       const response = await authorizedInject({
         method: 'GET',
-        url: `/api/iam/persons/${other.personId}`,
+        url: `/api/iam/persons/${authenticatedPersonId}`,
       });
 
       assert.equal(response.statusCode, 403);
       assertForbidden(response.body);
     });
 
-    it('returns 403 when person id does not exist', async () => {
+    it('returns 404 when person id does not exist', async () => {
+      await authorizePerson(['PERSON_READ']);
+
       const response = await authorizedInject({
         method: 'GET',
         url: `/api/iam/persons/${UNKNOWN_PERSON_ID}`,
       });
 
-      assert.equal(response.statusCode, 403);
-      assertForbidden(response.body);
+      assert.equal(response.statusCode, 404);
     });
   });
 
   describe('PUT /api/iam/persons/:id', () => {
     it('updates the authenticated person', async () => {
+      await authorizePerson(['PERSON_UPDATE']);
+
       const response = await authorizedInject({
         method: 'PUT',
         url: `/api/iam/persons/${authenticatedPersonId}`,
@@ -159,7 +178,7 @@ describe('Person HTTP routes (integration)', () => {
       assert.equal(body.fullName, 'Ana Costa Oliveira');
     });
 
-    it('returns 403 when updating another person', async () => {
+    it('returns 403 when PERSON_UPDATE is not granted', async () => {
       const other = await seedPersonFixture({
         email: 'first.person@example.com',
         documentValue: 'PUT111111',
@@ -178,6 +197,8 @@ describe('Person HTTP routes (integration)', () => {
     });
 
     it('returns 400 for empty body', async () => {
+      await authorizePerson(['PERSON_UPDATE']);
+
       const response = await authorizedInject({
         method: 'PUT',
         url: `/api/iam/persons/${authenticatedPersonId}`,
@@ -187,7 +208,9 @@ describe('Person HTTP routes (integration)', () => {
       assert.equal(response.statusCode, 400);
     });
 
-    it('returns 403 when person id does not exist', async () => {
+    it('returns 404 when person id does not exist', async () => {
+      await authorizePerson(['PERSON_UPDATE']);
+
       const response = await authorizedInject({
         method: 'PUT',
         url: `/api/iam/persons/${UNKNOWN_PERSON_ID}`,
@@ -196,13 +219,14 @@ describe('Person HTTP routes (integration)', () => {
         },
       });
 
-      assert.equal(response.statusCode, 403);
-      assertForbidden(response.body);
+      assert.equal(response.statusCode, 404);
     });
   });
 
   describe('DELETE /api/iam/persons/:id', () => {
     it('deactivates the authenticated person', async () => {
+      await authorizePerson(['PERSON_DELETE']);
+
       const response = await authorizedInject({
         method: 'DELETE',
         url: `/api/iam/persons/${authenticatedPersonId}`,
@@ -216,7 +240,7 @@ describe('Person HTTP routes (integration)', () => {
       assert.equal(body.status, 'INACTIVE');
     });
 
-    it('returns 403 when deleting another person', async () => {
+    it('returns 403 when PERSON_DELETE is not granted', async () => {
       const other = await seedPersonFixture({
         documentValue: 'DEL111111',
       });
@@ -231,6 +255,8 @@ describe('Person HTTP routes (integration)', () => {
     });
 
     it('is idempotent when authenticated person is already inactive', async () => {
+      await authorizePerson(['PERSON_DELETE']);
+
       await authorizedInject({
         method: 'DELETE',
         url: `/api/iam/persons/${authenticatedPersonId}`,
@@ -252,14 +278,15 @@ describe('Person HTTP routes (integration)', () => {
       assert.equal(body.events, undefined);
     });
 
-    it('returns 403 when person id does not exist', async () => {
+    it('returns 404 when person id does not exist', async () => {
+      await authorizePerson(['PERSON_DELETE']);
+
       const response = await authorizedInject({
         method: 'DELETE',
         url: `/api/iam/persons/${UNKNOWN_PERSON_ID}`,
       });
 
-      assert.equal(response.statusCode, 403);
-      assertForbidden(response.body);
+      assert.equal(response.statusCode, 404);
     });
   });
 });

@@ -29,4 +29,20 @@ export class InMemoryPermissionRepository implements PermissionRepository {
 
     return false;
   }
+
+  async findByTenantAndNormalizedName(
+    tenantId: TenantId,
+    normalizedName: string,
+  ): Promise<Permission | null> {
+    for (const permission of this.permissions.values()) {
+      if (
+        permission.getTenantId().equals(tenantId)
+        && permission.getName().normalizedValue === normalizedName
+      ) {
+        return permission;
+      }
+    }
+
+    return null;
+  }
 }

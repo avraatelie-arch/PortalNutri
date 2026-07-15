@@ -15,6 +15,11 @@ import {
   type SeededPerson,
 } from './person-http-test.harness.js';
 import { TEST_JWT_SECRET } from './jwt-test.config.js';
+import {
+  bindSessionTenant,
+  seedRbacFixture,
+  type PersonPermissionName,
+} from './rbac-test.harness.js';
 
 export { requireDatabaseUrl } from '../config/test-env.js';
 
@@ -154,6 +159,21 @@ export async function seedAuthenticatedFixture(
     password,
     tokens,
   };
+}
+
+export async function grantPersonPermissions(
+  personId: string,
+  sessionId: string,
+  permissions: PersonPermissionName[],
+): Promise<string> {
+  const fixture = await seedRbacFixture({
+    personId,
+    permissions,
+  });
+
+  await bindSessionTenant(sessionId, fixture.tenantId);
+
+  return fixture.tenantId;
 }
 
 export function withBearerToken(

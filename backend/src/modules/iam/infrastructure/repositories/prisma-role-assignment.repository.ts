@@ -49,4 +49,17 @@ export class PrismaRoleAssignmentRepository implements RoleAssignmentRepository 
 
     return record ? toDomain(record) : null;
   }
+
+  async findActiveByMembershipId(
+    membershipId: MembershipId,
+  ): Promise<RoleAssignment[]> {
+    const records = await this.prisma.roleAssignment.findMany({
+      where: {
+        membershipId: membershipId.toString(),
+        status: 'ACTIVE',
+      },
+    });
+
+    return records.map(toDomain);
+  }
 }

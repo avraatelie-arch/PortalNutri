@@ -1,19 +1,30 @@
+import type { AuthorizationContext } from '../../application/authorization/authorization-context.js';
+import { resolveAuthorizationPermissionKey } from '../../application/authorization/authorization-permission-key.js';
 import { AuthorizationEngine } from '../../application/authorization/authorization-engine.js';
 import type { AuthorizationService } from '../../application/authorization/authorization.service.js';
-import { AuthenticatedOnlyPolicy } from '../../application/authorization/policies/authenticated-only.policy.js';
-import { SelfPersonAccessPolicy } from '../../application/authorization/policies/self-person-access.policy.js';
+import type { EffectivePermissionResolver } from '../../application/ports/effective-permission-resolver.port.js';
 
 export class DefaultAuthorizationService implements AuthorizationService {
-  private readonly engine: AuthorizationEngine;
+  constructor(
+    private readonly effectivePermissionResolver: EffectivePermissionResolver,
+    private readonly engine: AuthorizationEngine,
+  ) {}
 
-  constructor() {
-    this.engine = new AuthorizationEngine([
-      new SelfPersonAccessPolicy(),
-      new AuthenticatedOnlyPolicy(),
-    ]);
-  }
+  async authorize(context: AuthorizationContext) {
+    const permissionKey = resolveAuthorizationPermissionKey(context);
+    let permissionGranted = false;
 
-  authorize(context: Parameters<AuthorizationService['authorize']>[0]) {
-    return this.engine.authorize(context);
+    if (permissionKey !== null && context.tenantId !== null) {
+      permissionGranted = await this.effectivePermissionResolver.hasActivePermission({
+        personId: context.personId,
+        tenantId: context.tenantId,
+        permissionKey,
+      });
+    }
+
+    return this.engine.authorize({
+      context,
+      permissionGranted,
+    });
   }
 }

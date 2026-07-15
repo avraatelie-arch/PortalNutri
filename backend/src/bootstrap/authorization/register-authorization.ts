@@ -70,7 +70,7 @@ export function registerAuthorization(
     }
 
     try {
-      const outcome = authorizationService.authorize(authorizationContext);
+      const outcome = await authorizationService.authorize(authorizationContext);
 
       if (outcome !== AuthorizationOutcome.ALLOW) {
         request.log.warn(

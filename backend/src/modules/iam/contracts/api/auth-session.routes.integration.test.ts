@@ -6,6 +6,7 @@ import {
   createAuthHttpTestApp,
   createAuthHttpTestAppWithEnv,
   createExpiredAccessToken,
+  grantPersonPermissions,
   injectJson,
   lockCredentialForPerson,
   loginWithCredentials,
@@ -256,6 +257,12 @@ describe('Auth HTTP routes (integration)', () => {
 
     it('returns person data on protected GET /api/iam/persons/:id', async () => {
       const auth = await seedAuthenticatedFixture(app);
+
+      await grantPersonPermissions(
+        auth.personId,
+        auth.tokens.sessionId,
+        ['PERSON_READ'],
+      );
 
       const response = await injectJson(
         app,

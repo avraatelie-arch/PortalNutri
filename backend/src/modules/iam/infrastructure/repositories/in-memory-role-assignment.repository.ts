@@ -32,4 +32,21 @@ export class InMemoryRoleAssignmentRepository
 
     return null;
   }
+
+  async findActiveByMembershipId(
+    membershipId: MembershipId,
+  ): Promise<RoleAssignment[]> {
+    const assignments: RoleAssignment[] = [];
+
+    for (const assignment of this.assignments.values()) {
+      if (
+        assignment.getMembershipId().equals(membershipId)
+        && assignment.isActive()
+      ) {
+        assignments.push(assignment);
+      }
+    }
+
+    return assignments;
+  }
 }

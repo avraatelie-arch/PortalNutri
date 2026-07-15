@@ -10,4 +10,5 @@ export interface PermissionAssignmentRepository {
     roleId: RoleId,
     permissionId: PermissionId,
   ): Promise<PermissionAssignment | null>;
+  findActiveByRoleId(roleId: RoleId): Promise<PermissionAssignment[]>;
 }

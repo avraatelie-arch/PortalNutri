@@ -10,4 +10,7 @@ export interface RoleAssignmentRepository {
     membershipId: MembershipId,
     roleId: RoleId,
   ): Promise<RoleAssignment | null>;
+  findActiveByMembershipId(
+    membershipId: MembershipId,
+  ): Promise<RoleAssignment[]>;
 }

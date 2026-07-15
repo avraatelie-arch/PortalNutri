@@ -29,7 +29,7 @@ import { PrismaRoleRepository } from './infrastructure/repositories/prisma-role.
 import { PrismaSessionRepository } from './infrastructure/repositories/prisma-session.repository.js';
 import { PrismaTenantRepository } from './infrastructure/repositories/prisma-tenant.repository.js';
 import { JoseTokenService } from './infrastructure/tokens/jose-token.service.js';
-import { DefaultAuthorizationService } from './infrastructure/authorization/default-authorization.service.js';
+import { createAuthorizationService } from './composition/authorization.factory.js';
 import type { AuthorizationService } from './application/authorization/authorization.service.js';
 import { EventDispatcher } from '../../core/application/events/event-dispatcher.js';
 import { AuditEventHandler } from '../../core/infrastructure/audit/audit-event-handler.js';
@@ -92,7 +92,13 @@ export function createIamDependencies(env: Env): IamDependencies {
   });
 
   return {
-    authorizationService: new DefaultAuthorizationService(),
+    authorizationService: createAuthorizationService({
+      membershipRepository,
+      roleAssignmentRepository,
+      roleRepository,
+      permissionAssignmentRepository,
+      permissionRepository,
+    }),
     eventDispatcher,
     personHandlers: createPersonHandlers({
       personRepository,

@@ -1,6 +1,6 @@
-import type { AuthorizationContext } from './authorization-context.js';
+import type { AuthorizationEvaluationInput } from './authorization-evaluation-input.js';
 import type { AuthorizationOutcome } from './authorization-decision.js';
 
 export interface AuthorizationPolicy {
-  evaluate(context: AuthorizationContext): AuthorizationOutcome;
+  evaluate(input: AuthorizationEvaluationInput): AuthorizationOutcome;
 }

@@ -17,6 +17,7 @@ import { PrismaPersonRepository } from './prisma-person.repository.js';
 import { PrismaSessionRepository } from './prisma-session.repository.js';
 import { createTestJwtConfig } from '../../../../test-support/jwt-test.config.js';
 import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
+import { resetIamData } from '../../../../test-support/rbac-test.harness.js';
 
 requireDatabaseUrl();
 
@@ -32,9 +33,7 @@ const passwordHasher = new Argon2PasswordHasher({
 const tokenService = new JoseTokenService(createTestJwtConfig());
 
 async function resetAuthData() {
-  await prisma.session.deleteMany();
-  await prisma.credential.deleteMany();
-  await prisma.person.deleteMany();
+  await resetIamData({ includeTenants: false });
 }
 
 describe('PrismaSessionRepository (integration)', () => {

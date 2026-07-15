@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import { AuthorizationAction } from './authorization-action.js';
 import { AuthorizationEngine } from './authorization-engine.js';
 import type { AuthorizationContext } from './authorization-context.js';
+import type { AuthorizationEvaluationInput } from './authorization-evaluation-input.js';
 import { AuthorizationOutcome } from './authorization-decision.js';
 import type { AuthorizationPolicy } from './authorization-policy.js';
 import { AuthorizationResource } from './authorization-resource.js';
@@ -13,10 +14,20 @@ function createContext(
   return {
     personId: 'person-a',
     sessionId: 'session-a',
-    tenantId: null,
+    tenantId: 'tenant-a',
     resource: AuthorizationResource.PERSON,
     action: AuthorizationAction.READ,
     resourceId: 'person-a',
+    ...overrides,
+  };
+}
+
+function createInput(
+  overrides: Partial<AuthorizationEvaluationInput> = {},
+): AuthorizationEvaluationInput {
+  return {
+    context: createContext(),
+    permissionGranted: true,
     ...overrides,
   };
 }
@@ -38,7 +49,7 @@ describe('AuthorizationEngine', () => {
     ]);
 
     assert.equal(
-      engine.authorize(createContext()),
+      engine.authorize(createInput()),
       AuthorizationOutcome.DENY,
     );
   });
@@ -50,7 +61,7 @@ describe('AuthorizationEngine', () => {
     ]);
 
     assert.equal(
-      engine.authorize(createContext()),
+      engine.authorize(createInput()),
       AuthorizationOutcome.ALLOW,
     );
   });
@@ -62,7 +73,7 @@ describe('AuthorizationEngine', () => {
     ]);
 
     assert.equal(
-      engine.authorize(createContext()),
+      engine.authorize(createInput()),
       AuthorizationOutcome.DENY,
     );
   });
@@ -71,7 +82,7 @@ describe('AuthorizationEngine', () => {
     const engine = new AuthorizationEngine([]);
 
     assert.equal(
-      engine.authorize(createContext()),
+      engine.authorize(createInput()),
       AuthorizationOutcome.DENY,
     );
   });

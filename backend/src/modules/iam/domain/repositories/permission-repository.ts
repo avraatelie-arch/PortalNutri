@@ -9,4 +9,8 @@ export interface PermissionRepository {
     tenantId: TenantId,
     normalizedName: string,
   ): Promise<boolean>;
+  findByTenantAndNormalizedName(
+    tenantId: TenantId,
+    normalizedName: string,
+  ): Promise<Permission | null>;
 }
