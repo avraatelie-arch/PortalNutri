@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, it } from 'node:test';
 import type { FastifyInstance } from 'fastify';
 import { UNAUTHORIZED_MESSAGE } from '../../application/authentication/unauthorized-response.js';
+import { FORBIDDEN_MESSAGE } from '../../application/authorization/forbidden-response.js';
 import {
   createAuthHttpTestApp,
   createAuthHttpTestAppWithEnv,
@@ -14,6 +15,7 @@ import {
   requireDatabaseUrl,
   seedAuthenticatedFixture,
   seedCredentialInDatabase,
+  selectTenantForSession,
   withBearerToken,
 } from '../../../../test-support/auth-http-test.harness.js';
 import {
@@ -21,10 +23,19 @@ import {
   seedInactivePersonFixture,
   seedPersonFixture,
 } from '../../../../test-support/person-http-test.harness.js';
+import {
+  seedRbacFixture,
+} from '../../../../test-support/rbac-test.harness.js';
+import { getPrismaClient } from '../../../../core/database/prisma-client.js';
+import { DeactivateTenantCommand } from '../../application/deactivate-tenant/deactivate-tenant.command.js';
+import { DeactivateTenantHandler } from '../../application/deactivate-tenant/deactivate-tenant.handler.js';
+import { PrismaTenantRepository } from '../../infrastructure/repositories/prisma-tenant.repository.js';
+import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 
 requireDatabaseUrl();
 
 const UNKNOWN_PERSON_ID = '550e8400-e29b-41d4-a716-446655440099';
+const UNKNOWN_TENANT_ID = '550e8400-e29b-41d4-a716-446655440098';
 const PRODUCTION_JWT_SECRET = 'a'.repeat(64);
 
 function assertUnauthorized(body: unknown) {
@@ -32,6 +43,14 @@ function assertUnauthorized(body: unknown) {
     statusCode: 401,
     error: 'Unauthorized',
     message: UNAUTHORIZED_MESSAGE,
+  });
+}
+
+function assertForbidden(body: unknown) {
+  assert.deepEqual(body, {
+    statusCode: 403,
+    error: 'Forbidden',
+    message: FORBIDDEN_MESSAGE,
   });
 }
 
@@ -415,6 +434,139 @@ describe('Auth HTTP routes (integration)', () => {
         sessionId: auth.tokens.sessionId,
         tenantId: null,
       });
+    });
+  });
+
+  describe('POST /api/auth/select-tenant', () => {
+    it('returns 401 without bearer token', async () => {
+      const response = await injectJson(app, {
+        method: 'POST',
+        url: '/api/auth/select-tenant',
+        payload: {
+          tenantId: UNKNOWN_TENANT_ID,
+        },
+      });
+
+      assert.equal(response.statusCode, 401);
+      assertUnauthorized(response.body);
+    });
+
+    it('binds tenant to session and exposes it on /me', async () => {
+      const auth = await seedAuthenticatedFixture(app);
+      const fixture = await seedRbacFixture({
+        personId: auth.personId,
+        permissions: [],
+      });
+
+      const select = await selectTenantForSession(
+        app,
+        auth.tokens.accessToken,
+        fixture.tenantId,
+      );
+
+      assert.equal(select.statusCode, 204);
+      assert.equal(select.body, '');
+
+      const me = await injectJson(
+        app,
+        withBearerToken(auth.tokens.accessToken, {
+          method: 'GET',
+          url: '/api/auth/me',
+        }),
+      );
+
+      assert.equal(me.statusCode, 200);
+      assert.deepEqual(me.body, {
+        personId: auth.personId,
+        sessionId: auth.tokens.sessionId,
+        tenantId: fixture.tenantId,
+      });
+    });
+
+    it('allows protected endpoint after tenant selection', async () => {
+      const auth = await seedAuthenticatedFixture(app);
+      const fixture = await seedRbacFixture({
+        personId: auth.personId,
+        permissions: ['PERSON_READ'],
+      });
+
+      const select = await selectTenantForSession(
+        app,
+        auth.tokens.accessToken,
+        fixture.tenantId,
+      );
+
+      assert.equal(select.statusCode, 204);
+
+      const response = await injectJson(
+        app,
+        withBearerToken(auth.tokens.accessToken, {
+          method: 'GET',
+          url: `/api/iam/persons/${auth.personId}`,
+        }),
+      );
+
+      assert.equal(response.statusCode, 200);
+
+      const body = response.body as { id?: string; email?: string };
+
+      assert.equal(body.id, auth.personId);
+      assert.equal(body.email, auth.email);
+    });
+
+    it('returns 404 for unknown tenant', async () => {
+      const auth = await seedAuthenticatedFixture(app);
+
+      const response = await selectTenantForSession(
+        app,
+        auth.tokens.accessToken,
+        UNKNOWN_TENANT_ID,
+      );
+
+      assert.equal(response.statusCode, 404);
+    });
+
+    it('returns 403 for removed membership', async () => {
+      const auth = await seedAuthenticatedFixture(app);
+      const fixture = await seedRbacFixture({
+        personId: auth.personId,
+        permissions: [],
+        membershipActive: false,
+      });
+
+      const response = await selectTenantForSession(
+        app,
+        auth.tokens.accessToken,
+        fixture.tenantId,
+      );
+
+      assert.equal(response.statusCode, 403);
+      assertForbidden(response.body);
+    });
+
+    it('returns 403 for inactive tenant', async () => {
+      const auth = await seedAuthenticatedFixture(app);
+      const fixture = await seedRbacFixture({
+        personId: auth.personId,
+        permissions: [],
+      });
+
+      const prisma = getPrismaClient();
+      const tenantRepository = new PrismaTenantRepository(prisma);
+
+      await new DeactivateTenantHandler(
+        tenantRepository,
+        noopEventDispatcher,
+      ).execute(new DeactivateTenantCommand(fixture.tenantId));
+
+      const response = await selectTenantForSession(
+        app,
+        auth.tokens.accessToken,
+        fixture.tenantId,
+      );
+
+      assert.equal(response.statusCode, 403);
+      assertForbidden(response.body);
     });
   });
 

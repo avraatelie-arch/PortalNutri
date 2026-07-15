@@ -21,3 +21,34 @@ export class SessionRevoked implements DomainEvent {
     this.occurredAt = occurredAt;
   }
 }
+
+export class TenantSelected implements DomainEvent {
+  readonly eventName = 'TenantSelected';
+  readonly occurredAt: Date;
+  readonly aggregateId: string;
+
+  constructor(
+    aggregateId: string,
+    readonly tenantId: string,
+    readonly personId: string,
+    occurredAt: Date = new Date(),
+  ) {
+    this.aggregateId = aggregateId;
+    this.occurredAt = occurredAt;
+  }
+}
+
+export class TenantCleared implements DomainEvent {
+  readonly eventName = 'TenantCleared';
+  readonly occurredAt: Date;
+  readonly aggregateId: string;
+
+  constructor(
+    aggregateId: string,
+    readonly tenantId: string,
+    occurredAt: Date = new Date(),
+  ) {
+    this.aggregateId = aggregateId;
+    this.occurredAt = occurredAt;
+  }
+}

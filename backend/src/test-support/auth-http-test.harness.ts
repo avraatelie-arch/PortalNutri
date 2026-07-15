@@ -176,6 +176,21 @@ export async function grantPersonPermissions(
   return fixture.tenantId;
 }
 
+export async function selectTenantForSession(
+  app: FastifyInstance,
+  accessToken: string,
+  tenantId: string,
+): Promise<{ statusCode: number; body: unknown }> {
+  return injectJson(
+    app,
+    withBearerToken(accessToken, {
+      method: 'POST',
+      url: '/api/auth/select-tenant',
+      payload: { tenantId },
+    }),
+  );
+}
+
 export function withBearerToken(
   accessToken: string,
   options: InjectOptions,

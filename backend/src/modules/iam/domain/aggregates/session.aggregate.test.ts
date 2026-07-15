@@ -119,4 +119,73 @@ describe('Session aggregate', () => {
       /cannot extend the absolute session lifetime/,
     );
   });
+
+  it('binds a tenant to the session', () => {
+    const session = createSession();
+    session.pullDomainEvents();
+
+    const tenantId = '550e8400-e29b-41d4-a716-446655440001';
+
+    session.bindTenant(tenantId);
+
+    assert.equal(session.getTenantId(), tenantId);
+    assert.equal(session.domainEvents.length, 1);
+    assert.equal(session.domainEvents[0]?.eventName, 'TenantSelected');
+  });
+
+  it('replaces a bound tenant', () => {
+    const session = createSession();
+    session.pullDomainEvents();
+
+    const firstTenantId = '550e8400-e29b-41d4-a716-446655440001';
+    const secondTenantId = '550e8400-e29b-41d4-a716-446655440002';
+
+    session.bindTenant(firstTenantId);
+    session.pullDomainEvents();
+    session.bindTenant(secondTenantId);
+
+    assert.equal(session.getTenantId(), secondTenantId);
+    assert.equal(session.domainEvents.length, 2);
+    assert.equal(session.domainEvents[0]?.eventName, 'TenantCleared');
+    assert.equal(session.domainEvents[1]?.eventName, 'TenantSelected');
+  });
+
+  it('clears a bound tenant', () => {
+    const session = createSession();
+    session.pullDomainEvents();
+
+    const tenantId = '550e8400-e29b-41d4-a716-446655440001';
+
+    session.bindTenant(tenantId);
+    session.pullDomainEvents();
+    session.clearTenant();
+
+    assert.equal(session.getTenantId(), null);
+    assert.equal(session.domainEvents.length, 1);
+    assert.equal(session.domainEvents[0]?.eventName, 'TenantCleared');
+  });
+
+  it('binds tenant idempotently', () => {
+    const session = createSession();
+    session.pullDomainEvents();
+
+    const tenantId = '550e8400-e29b-41d4-a716-446655440001';
+
+    session.bindTenant(tenantId);
+    session.pullDomainEvents();
+    session.bindTenant(tenantId);
+
+    assert.equal(session.getTenantId(), tenantId);
+    assert.equal(session.domainEvents.length, 0);
+  });
+
+  it('clears tenant idempotently', () => {
+    const session = createSession();
+    session.pullDomainEvents();
+
+    session.clearTenant();
+
+    assert.equal(session.getTenantId(), null);
+    assert.equal(session.domainEvents.length, 0);
+  });
 });

@@ -14,6 +14,10 @@ export const refreshBodySchema = z.object({
   refreshToken: z.string().min(1),
 });
 
+export const selectTenantBodySchema = z.object({
+  tenantId: z.string().uuid(),
+});
+
 export const authTokenResponseSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),
@@ -24,9 +28,10 @@ export const authTokenResponseSchema = z.object({
 export const meResponseSchema = z.object({
   personId: z.string().uuid(),
   sessionId: z.string().uuid(),
-  tenantId: z.null(),
+  tenantId: z.string().uuid().nullable(),
 });
 
 export type RegisterCredentialBody = z.infer<typeof registerCredentialBodySchema>;
 export type LoginBody = z.infer<typeof loginBodySchema>;
 export type RefreshBody = z.infer<typeof refreshBodySchema>;
+export type SelectTenantBody = z.infer<typeof selectTenantBodySchema>;

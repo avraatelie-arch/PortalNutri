@@ -4,7 +4,9 @@ import { LogoutSessionCommand } from '../../application/logout-session/logout-se
 import type { RefreshSessionResult } from '../../application/refresh-session/refresh-session.response.js';
 import { RefreshSessionCommand } from '../../application/refresh-session/refresh-session.command.js';
 import { RegisterCredentialCommand } from '../../application/register-credential/register-credential.command.js';
-import type { LoginBody, RefreshBody, RegisterCredentialBody } from './schemas/auth.schemas.js';
+import { SelectTenantCommand } from '../../application/select-tenant/select-tenant.command.js';
+import type { SecurityContext } from '../../application/security-context.js';
+import type { LoginBody, RefreshBody, RegisterCredentialBody, SelectTenantBody } from './schemas/auth.schemas.js';
 
 export function toRegisterCredentialCommand(
   body: RegisterCredentialBody,
@@ -36,6 +38,17 @@ export function toLogoutSessionCommand(
   sessionId: string,
 ): LogoutSessionCommand {
   return new LogoutSessionCommand({ sessionId });
+}
+
+export function toSelectTenantCommand(
+  securityContext: SecurityContext,
+  body: SelectTenantBody,
+): SelectTenantCommand {
+  return new SelectTenantCommand({
+    sessionId: securityContext.sessionId,
+    personId: securityContext.personId,
+    tenantId: body.tenantId,
+  });
 }
 
 export function toAuthTokenHttpResponse(

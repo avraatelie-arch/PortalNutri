@@ -1,6 +1,6 @@
 import { AggregateRoot } from './aggregate-root.js';
 import { DomainError } from '../errors/domain-error.js';
-import { SessionCreated, SessionRevoked } from '../events/session-events.js';
+import { SessionCreated, SessionRevoked, TenantCleared, TenantSelected } from '../events/session-events.js';
 import { PersonId } from '../value-objects/person-id.js';
 import { RefreshTokenFamilyId } from '../value-objects/refresh-token-family-id.js';
 import { RefreshTokenHash } from '../value-objects/refresh-token-hash.js';
@@ -34,7 +34,7 @@ export class Session extends AggregateRoot {
   private constructor(
     private readonly id: SessionId,
     private readonly personId: PersonId,
-    private readonly tenantId: string | null,
+    private tenantId: string | null,
     private status: SessionStatus,
     private refreshTokenHash: RefreshTokenHash,
     private readonly refreshTokenFamilyId: RefreshTokenFamilyId,
@@ -196,5 +196,55 @@ export class Session extends AggregateRoot {
     }
 
     this.status = SessionStatus.Expired;
+  }
+
+  bindTenant(tenantId: string): void {
+    if (!this.canValidateAccess()) {
+      throw new DomainError('Session cannot bind a tenant.');
+    }
+
+    const normalizedTenantId = tenantId?.trim();
+
+    if (!normalizedTenantId) {
+      throw new DomainError('Tenant id is required.');
+    }
+
+    if (this.tenantId === normalizedTenantId) {
+      return;
+    }
+
+    if (this.tenantId !== null) {
+      this.addDomainEvent(
+        new TenantCleared(this.id.toString(), this.tenantId),
+      );
+    }
+
+    this.tenantId = normalizedTenantId;
+    this.lastAccessAt = new Date();
+    this.addDomainEvent(
+      new TenantSelected(
+        this.id.toString(),
+        normalizedTenantId,
+        this.personId.toString(),
+      ),
+    );
+  }
+
+  clearTenant(): void {
+    if (!this.canValidateAccess()) {
+      throw new DomainError('Session cannot clear tenant.');
+    }
+
+    if (this.tenantId === null) {
+      return;
+    }
+
+    const previousTenantId = this.tenantId;
+
+    this.tenantId = null;
+    this.lastAccessAt = new Date();
+    this.addDomainEvent(
+      new TenantCleared(this.id.toString(), previousTenantId),
+    );
   }
 }

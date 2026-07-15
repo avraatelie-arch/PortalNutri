@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Env } from '../../../../config/env.js';
 import type { AuthenticatePersonHandler } from '../../application/authenticate-person/authenticate-person.handler.js';
 import type { LogoutSessionHandler } from '../../application/logout-session/logout-session.handler.js';
+import type { SelectTenantHandler } from '../../application/select-tenant/select-tenant.handler.js';
 import type { RefreshSessionHandler } from '../../application/refresh-session/refresh-session.handler.js';
 import type { RegisterCredentialHandler } from '../../application/register-credential/register-credential.handler.js';
 import { buildUnauthorizedResponse } from '../../application/authentication/unauthorized-response.js';
@@ -11,15 +12,18 @@ import {
   toLogoutSessionCommand,
   toRefreshSessionCommand,
   toRegisterCredentialCommand,
+  toSelectTenantCommand,
 } from './auth-http.mapper.js';
 import { mapAuthErrorToHttp } from './map-auth-error.js';
 import {
   loginBodySchema,
   refreshBodySchema,
   registerCredentialBodySchema,
+  selectTenantBodySchema,
   type LoginBody,
   type RefreshBody,
   type RegisterCredentialBody,
+  type SelectTenantBody,
 } from './schemas/auth.schemas.js';
 
 export interface AuthRouteHandlers {
@@ -27,6 +31,7 @@ export interface AuthRouteHandlers {
   authenticatePersonHandler: AuthenticatePersonHandler;
   refreshSessionHandler: RefreshSessionHandler;
   logoutSessionHandler: LogoutSessionHandler;
+  selectTenantHandler: SelectTenantHandler;
 }
 
 function sendMappedError(reply: FastifyReply, error: unknown) {
@@ -117,6 +122,40 @@ export async function registerAuthRoutes(
       try {
         await handlers.logoutSessionHandler.execute(
           toLogoutSessionCommand(securityContext.sessionId),
+        );
+
+        return reply.status(204).send();
+      } catch (error) {
+        return sendMappedError(reply, error);
+      }
+    },
+  );
+
+  app.post(
+    '/select-tenant',
+    {
+      schema: {
+        security: [{ bearerAuth: [] }],
+        body: selectTenantBodySchema,
+      },
+      config: {
+        authorization: {
+          authenticatedOnly: true,
+        },
+      },
+    },
+    async (request, reply) => {
+      const securityContext = requireSecurityContext(request, reply);
+
+      if (!securityContext) {
+        return;
+      }
+
+      try {
+        const body = request.body as SelectTenantBody;
+
+        await handlers.selectTenantHandler.execute(
+          toSelectTenantCommand(securityContext, body),
         );
 
         return reply.status(204).send();

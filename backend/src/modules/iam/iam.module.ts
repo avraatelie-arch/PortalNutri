@@ -49,6 +49,7 @@ export interface IamDependencies {
     authenticatePersonHandler: AuthRouteHandlers['authenticatePersonHandler'];
     refreshSessionHandler: AuthRouteHandlers['refreshSessionHandler'];
     logoutSessionHandler: AuthRouteHandlers['logoutSessionHandler'];
+    selectTenantHandler: AuthRouteHandlers['selectTenantHandler'];
     validateAccessTokenHandler: ValidateAccessTokenHandlerType;
   };
   tenantHandlers: TenantHandlers;
@@ -86,6 +87,8 @@ export function createIamDependencies(env: Env): IamDependencies {
     personRepository,
     credentialRepository,
     sessionRepository,
+    membershipRepository,
+    tenantRepository,
     passwordHasher,
     tokenService,
     eventDispatcher,
@@ -111,6 +114,7 @@ export function createIamDependencies(env: Env): IamDependencies {
       authenticatePersonHandler: authenticationHandlers.authenticatePersonHandler,
       refreshSessionHandler: authenticationHandlers.refreshSessionHandler,
       logoutSessionHandler: authenticationHandlers.logoutSessionHandler,
+      selectTenantHandler: authenticationHandlers.selectTenantHandler,
       validateAccessTokenHandler: authenticationHandlers.validateAccessTokenHandler,
     },
     tenantHandlers: createTenantHandlers({
