@@ -14,6 +14,16 @@ export const AuthorizationPermissionKey = {
   MEMBERSHIP_READ: PermissionName.create('MEMBERSHIP_READ').normalizedValue,
   MEMBERSHIP_CREATE: PermissionName.create('MEMBERSHIP_CREATE').normalizedValue,
   MEMBERSHIP_DELETE: PermissionName.create('MEMBERSHIP_DELETE').normalizedValue,
+  ROLE_READ: PermissionName.create('ROLE_READ').normalizedValue,
+  ROLE_CREATE: PermissionName.create('ROLE_CREATE').normalizedValue,
+  ROLE_ASSIGN: PermissionName.create('ROLE_ASSIGN').normalizedValue,
+  ROLE_ASSIGNMENT_READ: PermissionName.create('ROLE_ASSIGNMENT_READ').normalizedValue,
+  ROLE_REMOVE: PermissionName.create('ROLE_REMOVE').normalizedValue,
+  PERMISSION_READ: PermissionName.create('PERMISSION_READ').normalizedValue,
+  PERMISSION_CREATE: PermissionName.create('PERMISSION_CREATE').normalizedValue,
+  PERMISSION_GRANT: PermissionName.create('PERMISSION_GRANT').normalizedValue,
+  PERMISSION_ASSIGNMENT_READ: PermissionName.create('PERMISSION_ASSIGNMENT_READ').normalizedValue,
+  PERMISSION_REVOKE: PermissionName.create('PERMISSION_REVOKE').normalizedValue,
 } as const;
 
 export function resolveAuthorizationPermissionKey(
@@ -55,6 +65,54 @@ export function resolveAuthorizationPermissionKey(
         return AuthorizationPermissionKey.MEMBERSHIP_CREATE;
       case AuthorizationAction.DELETE:
         return AuthorizationPermissionKey.MEMBERSHIP_DELETE;
+      default:
+        return null;
+    }
+  }
+
+  if (context.resource === AuthorizationResource.ROLE) {
+    switch (context.action) {
+      case AuthorizationAction.READ:
+        return AuthorizationPermissionKey.ROLE_READ;
+      case AuthorizationAction.CREATE:
+        return AuthorizationPermissionKey.ROLE_CREATE;
+      default:
+        return null;
+    }
+  }
+
+  if (context.resource === AuthorizationResource.ROLE_ASSIGNMENT) {
+    switch (context.action) {
+      case AuthorizationAction.CREATE:
+        return AuthorizationPermissionKey.ROLE_ASSIGN;
+      case AuthorizationAction.READ:
+        return AuthorizationPermissionKey.ROLE_ASSIGNMENT_READ;
+      case AuthorizationAction.DELETE:
+        return AuthorizationPermissionKey.ROLE_REMOVE;
+      default:
+        return null;
+    }
+  }
+
+  if (context.resource === AuthorizationResource.PERMISSION) {
+    switch (context.action) {
+      case AuthorizationAction.READ:
+        return AuthorizationPermissionKey.PERMISSION_READ;
+      case AuthorizationAction.CREATE:
+        return AuthorizationPermissionKey.PERMISSION_CREATE;
+      default:
+        return null;
+    }
+  }
+
+  if (context.resource === AuthorizationResource.PERMISSION_ASSIGNMENT) {
+    switch (context.action) {
+      case AuthorizationAction.CREATE:
+        return AuthorizationPermissionKey.PERMISSION_GRANT;
+      case AuthorizationAction.READ:
+        return AuthorizationPermissionKey.PERMISSION_ASSIGNMENT_READ;
+      case AuthorizationAction.DELETE:
+        return AuthorizationPermissionKey.PERMISSION_REVOKE;
       default:
         return null;
     }

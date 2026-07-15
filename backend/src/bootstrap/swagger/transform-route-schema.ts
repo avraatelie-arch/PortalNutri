@@ -37,6 +37,10 @@ function isIamRoute(url: string): boolean {
     || url.startsWith('/api/auth')
     || url.startsWith('/api/tenants')
     || url.startsWith('/api/memberships')
+    || url.startsWith('/api/roles')
+    || url.startsWith('/api/role-assignments')
+    || url.startsWith('/api/permissions')
+    || url.startsWith('/api/permission-assignments')
   );
 }
 

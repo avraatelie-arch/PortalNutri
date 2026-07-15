@@ -69,7 +69,7 @@ export class AssignRoleHandler {
         await this.roleAssignmentRepository.save(assignment);
         await this.eventDispatcher.dispatch(assignment.pullDomainEvents());
 
-        return toAssignRoleResponse(assignment);
+        return toAssignRoleResponse(assignment, 'CREATED');
       }
 
       if (existing.isRemoved()) {
@@ -79,7 +79,7 @@ export class AssignRoleHandler {
         await this.roleAssignmentRepository.save(existing);
         await this.eventDispatcher.dispatch(events);
 
-        return toAssignRoleResponse(existing);
+        return toAssignRoleResponse(existing, 'REACTIVATED');
       }
 
       throw new RoleAssignmentAlreadyExistsError(

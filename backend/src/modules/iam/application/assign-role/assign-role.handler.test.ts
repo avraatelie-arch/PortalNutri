@@ -107,6 +107,7 @@ describe('AssignRoleHandler', () => {
     assert.equal(response.membershipId, context.membership.id);
     assert.equal(response.roleId, context.role.id);
     assert.equal(response.status, RoleAssignmentStatus.Active);
+    assert.equal(response.operation, 'CREATED');
   });
 
   it('denies assignment when role tenant differs from membership tenant', async () => {
@@ -185,6 +186,7 @@ describe('AssignRoleHandler', () => {
 
     assert.equal(reactivated.id, created.id);
     assert.equal(reactivated.status, RoleAssignmentStatus.Active);
+    assert.equal(reactivated.operation, 'REACTIVATED');
   });
 
   it('rejects duplicate active assignments', async () => {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { AuthorizationAction } from './authorization-action.js';
-import type { AuthorizationContext } from './authorization-context.js';
+import { createEmptyAuthorizationContext } from './authorization-context.js';
 import {
   AuthorizationPermissionKey,
   resolveAuthorizationPermissionKey,
@@ -9,19 +9,17 @@ import {
 import { AuthorizationResource } from './authorization-resource.js';
 
 function createContext(
-  overrides: Partial<AuthorizationContext> = {},
-): AuthorizationContext {
-  return {
+  overrides: Partial<ReturnType<typeof createEmptyAuthorizationContext>> = {},
+) {
+  return createEmptyAuthorizationContext({
     personId: 'person-a',
     sessionId: 'session-a',
     tenantId: 'tenant-a',
     resource: AuthorizationResource.PERSON,
     action: AuthorizationAction.READ,
     resourceId: 'person-a',
-    scopeTenantId: null,
-    resourceTenantId: null,
     ...overrides,
-  };
+  });
 }
 
 describe('resolveAuthorizationPermissionKey', () => {
@@ -136,14 +134,107 @@ describe('resolveAuthorizationPermissionKey', () => {
       ),
       AuthorizationPermissionKey.MEMBERSHIP_DELETE,
     );
+  });
+
+  it('maps ROLE actions to permission keys', () => {
     assert.equal(
       resolveAuthorizationPermissionKey(
         createContext({
-          resource: AuthorizationResource.MEMBERSHIP,
-          action: AuthorizationAction.UPDATE,
+          resource: AuthorizationResource.ROLE,
+          action: AuthorizationAction.READ,
         }),
       ),
-      null,
+      AuthorizationPermissionKey.ROLE_READ,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.ROLE,
+          action: AuthorizationAction.CREATE,
+        }),
+      ),
+      AuthorizationPermissionKey.ROLE_CREATE,
+    );
+  });
+
+  it('maps ROLE_ASSIGNMENT actions to permission keys', () => {
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.ROLE_ASSIGNMENT,
+          action: AuthorizationAction.CREATE,
+        }),
+      ),
+      AuthorizationPermissionKey.ROLE_ASSIGN,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.ROLE_ASSIGNMENT,
+          action: AuthorizationAction.READ,
+        }),
+      ),
+      AuthorizationPermissionKey.ROLE_ASSIGNMENT_READ,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.ROLE_ASSIGNMENT,
+          action: AuthorizationAction.DELETE,
+        }),
+      ),
+      AuthorizationPermissionKey.ROLE_REMOVE,
+    );
+  });
+
+  it('maps PERMISSION actions to permission keys', () => {
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.PERMISSION,
+          action: AuthorizationAction.READ,
+        }),
+      ),
+      AuthorizationPermissionKey.PERMISSION_READ,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.PERMISSION,
+          action: AuthorizationAction.CREATE,
+        }),
+      ),
+      AuthorizationPermissionKey.PERMISSION_CREATE,
+    );
+  });
+
+  it('maps PERMISSION_ASSIGNMENT actions to permission keys', () => {
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.PERMISSION_ASSIGNMENT,
+          action: AuthorizationAction.CREATE,
+        }),
+      ),
+      AuthorizationPermissionKey.PERMISSION_GRANT,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.PERMISSION_ASSIGNMENT,
+          action: AuthorizationAction.READ,
+        }),
+      ),
+      AuthorizationPermissionKey.PERMISSION_ASSIGNMENT_READ,
+    );
+    assert.equal(
+      resolveAuthorizationPermissionKey(
+        createContext({
+          resource: AuthorizationResource.PERMISSION_ASSIGNMENT,
+          action: AuthorizationAction.DELETE,
+        }),
+      ),
+      AuthorizationPermissionKey.PERMISSION_REVOKE,
     );
   });
 });

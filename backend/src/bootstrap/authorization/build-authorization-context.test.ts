@@ -31,8 +31,9 @@ describe('buildAuthorizationContext', () => {
       resource: AuthorizationResource.PERSON,
       action: AuthorizationAction.EXECUTE,
       resourceId: null,
-      scopeTenantId: null,
-      resourceTenantId: null,
+      scopeRefs: {},
+      resolvedTenantIds: new Set(),
+      resolvedScopeRefCount: 0,
     });
   });
 
@@ -50,8 +51,9 @@ describe('buildAuthorizationContext', () => {
       resource: AuthorizationResource.PERSON,
       action: AuthorizationAction.READ,
       resourceId: 'person-a',
-      scopeTenantId: null,
-      resourceTenantId: null,
+      scopeRefs: {},
+      resolvedTenantIds: new Set(),
+      resolvedScopeRefCount: 0,
     });
   });
 
@@ -101,23 +103,24 @@ describe('buildAuthorizationContext', () => {
       resource: AuthorizationResource.MEMBERSHIP,
       action: AuthorizationAction.CREATE,
       resourceId: null,
-      scopeTenantId: 'tenant-b',
-      resourceTenantId: null,
+      scopeRefs: { tenantId: 'tenant-b' },
+      resolvedTenantIds: new Set(['tenant-b']),
+      resolvedScopeRefCount: 1,
     });
   });
 
-  it('extracts scope tenant id from route params', () => {
+  it('extracts scope refs from request body', () => {
     const context = buildAuthorizationContext(
       createRequest({
-        params: {
-          personId: 'person-b',
-          tenantId: 'tenant-b',
+        body: {
+          membershipId: 'membership-b',
+          roleId: 'role-b',
         },
       }),
       {
-        resource: AuthorizationResource.MEMBERSHIP,
-        action: AuthorizationAction.DELETE,
-        scopeTenantIdFromParam: 'tenantId',
+        resource: AuthorizationResource.ROLE_ASSIGNMENT,
+        action: AuthorizationAction.CREATE,
+        scopeRefsFromBody: ['membershipId', 'roleId'],
       },
     );
 
@@ -125,11 +128,15 @@ describe('buildAuthorizationContext', () => {
       personId: 'person-a',
       sessionId: 'session-a',
       tenantId: null,
-      resource: AuthorizationResource.MEMBERSHIP,
-      action: AuthorizationAction.DELETE,
+      resource: AuthorizationResource.ROLE_ASSIGNMENT,
+      action: AuthorizationAction.CREATE,
       resourceId: null,
-      scopeTenantId: 'tenant-b',
-      resourceTenantId: null,
+      scopeRefs: {
+        membershipId: 'membership-b',
+        roleId: 'role-b',
+      },
+      resolvedTenantIds: new Set(),
+      resolvedScopeRefCount: 0,
     });
   });
 

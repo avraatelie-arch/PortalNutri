@@ -5,28 +5,21 @@ import type { AuthorizationPolicy } from '../authorization-policy.js';
 import { AuthorizationResource } from '../authorization-resource.js';
 import { evaluateResolvedTenantScope } from '../evaluate-resolved-tenant-scope.js';
 
-function minimumResolvedTenants(action: AuthorizationAction): number {
-  switch (action) {
-    case AuthorizationAction.CREATE:
-    case AuthorizationAction.READ:
-    case AuthorizationAction.DELETE:
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-export class MembershipResourceScopePolicy implements AuthorizationPolicy {
+export class PermissionResourceScopePolicy implements AuthorizationPolicy {
   evaluate(input: AuthorizationEvaluationInput): AuthorizationOutcome {
     const { context } = input;
 
-    if (context.resource !== AuthorizationResource.MEMBERSHIP) {
+    if (context.resource !== AuthorizationResource.PERMISSION) {
       return AuthorizationOutcome.ABSTAIN;
     }
 
-    return evaluateResolvedTenantScope(
-      context,
-      minimumResolvedTenants(context.action),
-    );
+    if (
+      context.action !== AuthorizationAction.CREATE
+      && context.action !== AuthorizationAction.READ
+    ) {
+      return AuthorizationOutcome.ABSTAIN;
+    }
+
+    return evaluateResolvedTenantScope(context, 1);
   }
 }

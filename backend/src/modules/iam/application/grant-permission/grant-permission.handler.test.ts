@@ -87,6 +87,7 @@ describe('GrantPermissionHandler', () => {
     assert.equal(response.roleId, context.role.id);
     assert.equal(response.permissionId, context.permission.id);
     assert.equal(response.status, PermissionAssignmentStatus.Active);
+    assert.equal(response.operation, 'CREATED');
   });
 
   it('denies grant when permission tenant differs from role tenant', async () => {
@@ -165,6 +166,7 @@ describe('GrantPermissionHandler', () => {
 
     assert.equal(reactivated.id, created.id);
     assert.equal(reactivated.status, PermissionAssignmentStatus.Active);
+    assert.equal(reactivated.operation, 'REACTIVATED');
   });
 
   it('rejects duplicate active assignments', async () => {

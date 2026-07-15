@@ -7,6 +7,8 @@ import {
   registerAuthModule,
   registerIamModule,
   registerMembershipModule,
+  registerPermissionModule,
+  registerRoleModule,
   registerTenantModule,
 } from '../modules/iam/iam.module.js';
 import {
@@ -48,6 +50,8 @@ export async function registerModules(
       );
       await registerTenantModule(api, dependencies.tenantHandlers);
       await registerMembershipModule(api, dependencies.membershipHandlers);
+      await registerRoleModule(api, dependencies.roleHandlers);
+      await registerPermissionModule(api, dependencies.permissionHandlers);
     },
     { prefix: '/api' },
   );

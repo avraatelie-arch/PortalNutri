@@ -1,6 +1,8 @@
 import type { PermissionAssignment } from '../../domain/aggregates/permission-assignment.aggregate.js';
 import type { PermissionAssignmentStatus } from '../../domain/value-objects/permission-assignment-status.js';
 
+export type GrantPermissionOperation = 'CREATED' | 'REACTIVATED';
+
 export interface GrantPermissionResponse {
   id: string;
   roleId: string;
@@ -9,10 +11,12 @@ export interface GrantPermissionResponse {
   createdAt: string;
   reactivatedAt: string | null;
   removedAt: string | null;
+  operation: GrantPermissionOperation;
 }
 
 export function toGrantPermissionResponse(
   assignment: PermissionAssignment,
+  operation: GrantPermissionOperation,
 ): GrantPermissionResponse {
   return {
     id: assignment.getId().toString(),
@@ -22,5 +26,6 @@ export function toGrantPermissionResponse(
     createdAt: assignment.getCreatedAt().toISOString(),
     reactivatedAt: assignment.getReactivatedAt()?.toISOString() ?? null,
     removedAt: assignment.getRemovedAt()?.toISOString() ?? null,
+    operation,
   };
 }

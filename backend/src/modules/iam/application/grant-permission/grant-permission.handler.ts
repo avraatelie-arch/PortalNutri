@@ -65,7 +65,7 @@ export class GrantPermissionHandler {
         await this.permissionAssignmentRepository.save(assignment);
         await this.eventDispatcher.dispatch(assignment.pullDomainEvents());
 
-        return toGrantPermissionResponse(assignment);
+        return toGrantPermissionResponse(assignment, 'CREATED');
       }
 
       if (existing.isRemoved()) {
@@ -75,7 +75,7 @@ export class GrantPermissionHandler {
         await this.permissionAssignmentRepository.save(existing);
         await this.eventDispatcher.dispatch(events);
 
-        return toGrantPermissionResponse(existing);
+        return toGrantPermissionResponse(existing, 'REACTIVATED');
       }
 
       throw new PermissionAssignmentAlreadyExistsError(

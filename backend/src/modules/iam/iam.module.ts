@@ -20,6 +20,10 @@ import { registerPersonRoutes } from './contracts/api/person.routes.js';
 import type { PersonRouteHandlers } from './contracts/api/person.routes.js';
 import { registerMembershipRoutes } from './contracts/api/membership.routes.js';
 import type { MembershipRouteHandlers } from './contracts/api/membership.routes.js';
+import { registerPermissionRoutes } from './contracts/api/permission.routes.js';
+import type { PermissionRouteHandlers } from './contracts/api/permission.routes.js';
+import { registerRoleRoutes } from './contracts/api/role.routes.js';
+import type { RoleRouteHandlers } from './contracts/api/role.routes.js';
 import { registerTenantRoutes } from './contracts/api/tenant.routes.js';
 import type { TenantRouteHandlers } from './contracts/api/tenant.routes.js';
 import { Argon2PasswordHasher } from './infrastructure/cryptography/argon2-password-hasher.js';
@@ -167,6 +171,20 @@ export async function registerMembershipModule(
   handlers: MembershipRouteHandlers,
 ): Promise<void> {
   await registerMembershipRoutes(app, handlers);
+}
+
+export async function registerRoleModule(
+  app: FastifyInstance,
+  handlers: RoleRouteHandlers,
+): Promise<void> {
+  await registerRoleRoutes(app, handlers);
+}
+
+export async function registerPermissionModule(
+  app: FastifyInstance,
+  handlers: PermissionRouteHandlers,
+): Promise<void> {
+  await registerPermissionRoutes(app, handlers);
 }
 
 export async function registerAuthModule(

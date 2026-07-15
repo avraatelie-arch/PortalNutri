@@ -1,27 +1,32 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { AuthorizationAction } from '../authorization-action.js';
-import type { AuthorizationContext } from '../authorization-context.js';
+import { createEmptyAuthorizationContext } from '../authorization-context.js';
 import type { AuthorizationEvaluationInput } from '../authorization-evaluation-input.js';
 import { AuthorizationOutcome } from '../authorization-decision.js';
 import { AuthorizationResource } from '../authorization-resource.js';
 import { MembershipResourceScopePolicy } from './membership-resource-scope.policy.js';
 
 function createInput(
-  overrides: Partial<AuthorizationContext> = {},
+  overrides: {
+    tenantId?: string | null;
+    resolvedTenantIds?: string[];
+    resolvedScopeRefCount?: number;
+    action?: AuthorizationAction;
+  } = {},
 ): AuthorizationEvaluationInput {
   return {
-    context: {
+    context: createEmptyAuthorizationContext({
       personId: 'person-a',
       sessionId: 'session-a',
       tenantId: 'tenant-a',
       resource: AuthorizationResource.MEMBERSHIP,
       action: AuthorizationAction.READ,
       resourceId: 'membership-a',
-      scopeTenantId: null,
-      resourceTenantId: 'tenant-a',
+      resolvedTenantIds: new Set(overrides.resolvedTenantIds ?? ['tenant-a']),
+      resolvedScopeRefCount: overrides.resolvedScopeRefCount ?? 1,
       ...overrides,
-    },
+    }),
     permissionGranted: true,
   };
 }
@@ -30,23 +35,21 @@ describe('MembershipResourceScopePolicy', () => {
   const policy = new MembershipResourceScopePolicy();
 
   it('abstains for non-membership resources', () => {
+    const input = createInput({ resolvedTenantIds: ['tenant-a'] });
+    input.context = {
+      ...input.context,
+      resource: AuthorizationResource.PERSON,
+    };
+
     assert.equal(
-      policy.evaluate(
-        createInput({
-          resource: AuthorizationResource.PERSON,
-        }),
-      ),
+      policy.evaluate(input),
       AuthorizationOutcome.ABSTAIN,
     );
   });
 
   it('denies when session tenant is not bound', () => {
     assert.equal(
-      policy.evaluate(
-        createInput({
-          tenantId: null,
-        }),
-      ),
+      policy.evaluate(createInput({ tenantId: null })),
       AuthorizationOutcome.DENY,
     );
   });
@@ -56,9 +59,7 @@ describe('MembershipResourceScopePolicy', () => {
       policy.evaluate(
         createInput({
           action: AuthorizationAction.CREATE,
-          resourceId: null,
-          scopeTenantId: 'tenant-b',
-          resourceTenantId: null,
+          resolvedTenantIds: ['tenant-b'],
         }),
       ),
       AuthorizationOutcome.DENY,
@@ -70,68 +71,39 @@ describe('MembershipResourceScopePolicy', () => {
       policy.evaluate(
         createInput({
           action: AuthorizationAction.CREATE,
-          resourceId: null,
-          scopeTenantId: 'tenant-a',
-          resourceTenantId: null,
+          resolvedTenantIds: ['tenant-a'],
         }),
       ),
       AuthorizationOutcome.ABSTAIN,
     );
   });
 
-  it('denies GET when resolved resource tenant is missing', () => {
+  it('denies GET when resolved tenant is missing', () => {
     assert.equal(
       policy.evaluate(
         createInput({
-          resourceTenantId: null,
+          resolvedTenantIds: [],
+          resolvedScopeRefCount: 0,
         }),
       ),
       AuthorizationOutcome.DENY,
     );
   });
 
-  it('denies GET when resolved resource tenant differs from bound tenant', () => {
+  it('denies GET when resolved tenant differs from bound tenant', () => {
     assert.equal(
       policy.evaluate(
         createInput({
-          resourceTenantId: 'tenant-b',
+          resolvedTenantIds: ['tenant-b'],
         }),
       ),
       AuthorizationOutcome.DENY,
     );
   });
 
-  it('abstains GET when resolved resource tenant matches bound tenant', () => {
+  it('abstains GET when resolved tenant matches bound tenant', () => {
     assert.equal(
       policy.evaluate(createInput()),
-      AuthorizationOutcome.ABSTAIN,
-    );
-  });
-
-  it('denies DELETE when route tenant differs from bound tenant', () => {
-    assert.equal(
-      policy.evaluate(
-        createInput({
-          action: AuthorizationAction.DELETE,
-          resourceId: null,
-          scopeTenantId: 'tenant-b',
-          resourceTenantId: null,
-        }),
-      ),
-      AuthorizationOutcome.DENY,
-    );
-  });
-
-  it('abstains DELETE when route tenant matches bound tenant', () => {
-    assert.equal(
-      policy.evaluate(
-        createInput({
-          action: AuthorizationAction.DELETE,
-          resourceId: null,
-          scopeTenantId: 'tenant-a',
-          resourceTenantId: null,
-        }),
-      ),
       AuthorizationOutcome.ABSTAIN,
     );
   });

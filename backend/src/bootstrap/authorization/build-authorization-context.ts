@@ -2,6 +2,7 @@ import type { FastifyRequest } from 'fastify';
 import type { AuthorizationContext } from '../../modules/iam/application/authorization/authorization-context.js';
 import { AuthorizationAction } from '../../modules/iam/application/authorization/authorization-action.js';
 import { AuthorizationResource } from '../../modules/iam/application/authorization/authorization-resource.js';
+import { EMPTY_RESOLVED_TENANT_IDS } from '../../modules/iam/application/authorization/resolved-tenant-ids.js';
 import type { SecurityContext } from '../../modules/iam/application/security-context.js';
 import {
   isAuthenticatedOnlyMetadata,
@@ -66,23 +67,60 @@ function resolveStringField(
   return value;
 }
 
-function resolveScopeTenantId(
+function resolveScopeRefs(
+  source: unknown,
+  fieldNames: string[] | undefined,
+): Record<string, string> {
+  if (!fieldNames || fieldNames.length === 0) {
+    return {};
+  }
+
+  const refs: Record<string, string> = {};
+
+  for (const fieldName of fieldNames) {
+    const value = resolveStringField(source, fieldName);
+
+    if (value) {
+      refs[fieldName] = value;
+    }
+  }
+
+  return refs;
+}
+
+function resolveDirectTenantIds(
   request: FastifyRequest,
   metadata: RouteAuthorizationMetadata,
-): string | null {
+): Set<string> {
+  const tenantIds = new Set<string>();
+
   if (isAuthenticatedOnlyMetadata(metadata)) {
-    return null;
+    return tenantIds;
   }
 
   if (metadata.scopeTenantIdFromBody !== undefined) {
-    return resolveStringField(request.body, metadata.scopeTenantIdFromBody);
+    const tenantId = resolveStringField(
+      request.body,
+      metadata.scopeTenantIdFromBody,
+    );
+
+    if (tenantId) {
+      tenantIds.add(tenantId);
+    }
   }
 
   if (metadata.scopeTenantIdFromParam !== undefined) {
-    return resolveResourceId(request, metadata.scopeTenantIdFromParam);
+    const tenantId = resolveResourceId(
+      request,
+      metadata.scopeTenantIdFromParam,
+    );
+
+    if (tenantId) {
+      tenantIds.add(tenantId);
+    }
   }
 
-  return null;
+  return tenantIds;
 }
 
 export function buildAuthorizationContext(
@@ -103,13 +141,40 @@ export function buildAuthorizationContext(
       resource: AuthorizationResource.PERSON,
       action: AuthorizationAction.EXECUTE,
       resourceId: null,
-      scopeTenantId: null,
-      resourceTenantId: null,
+      scopeRefs: {},
+      resolvedTenantIds: EMPTY_RESOLVED_TENANT_IDS,
+      resolvedScopeRefCount: 0,
     };
   }
 
   const resourceId = resolveResourceId(request, metadata.resourceIdParam);
-  const scopeTenantId = resolveScopeTenantId(request, metadata);
+  const scopeRefs = {
+    ...resolveScopeRefs(request.body, metadata.scopeRefsFromBody),
+    ...resolveScopeRefs(request.params, metadata.scopeRefsFromParams),
+  };
+  const resolvedTenantIds = resolveDirectTenantIds(request, metadata);
+
+  if (metadata.scopeTenantIdFromBody !== undefined) {
+    const tenantId = resolveStringField(
+      request.body,
+      metadata.scopeTenantIdFromBody,
+    );
+
+    if (tenantId) {
+      scopeRefs[metadata.scopeTenantIdFromBody] = tenantId;
+    }
+  }
+
+  if (metadata.scopeTenantIdFromParam !== undefined) {
+    const tenantId = resolveResourceId(
+      request,
+      metadata.scopeTenantIdFromParam,
+    );
+
+    if (tenantId) {
+      scopeRefs[metadata.scopeTenantIdFromParam] = tenantId;
+    }
+  }
 
   if (
     metadata.resourceIdParam !== undefined
@@ -120,16 +185,32 @@ export function buildAuthorizationContext(
 
   if (
     metadata.scopeTenantIdFromBody !== undefined
-    && scopeTenantId === null
+    && resolveStringField(request.body, metadata.scopeTenantIdFromBody) === null
   ) {
     return null;
   }
 
   if (
     metadata.scopeTenantIdFromParam !== undefined
-    && scopeTenantId === null
+    && resolveResourceId(request, metadata.scopeTenantIdFromParam) === null
   ) {
     return null;
+  }
+
+  if (metadata.scopeRefsFromBody !== undefined) {
+    for (const fieldName of metadata.scopeRefsFromBody) {
+      if (!(fieldName in scopeRefs)) {
+        return null;
+      }
+    }
+  }
+
+  if (metadata.scopeRefsFromParams !== undefined) {
+    for (const fieldName of metadata.scopeRefsFromParams) {
+      if (!(fieldName in scopeRefs)) {
+        return null;
+      }
+    }
   }
 
   return {
@@ -139,7 +220,8 @@ export function buildAuthorizationContext(
     resource: metadata.resource,
     action: metadata.action,
     resourceId,
-    scopeTenantId,
-    resourceTenantId: null,
+    scopeRefs,
+    resolvedTenantIds,
+    resolvedScopeRefCount: resolvedTenantIds.size,
   };
 }

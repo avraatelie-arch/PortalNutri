@@ -11,6 +11,8 @@ export interface ResourceRouteAuthorization {
   resourceIdParam?: string;
   scopeTenantIdFromBody?: string;
   scopeTenantIdFromParam?: string;
+  scopeRefsFromBody?: string[];
+  scopeRefsFromParams?: string[];
   resolveResourceTenantFromId?: boolean;
 }
 

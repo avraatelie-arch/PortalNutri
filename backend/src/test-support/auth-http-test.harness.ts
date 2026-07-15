@@ -19,7 +19,9 @@ import {
   bindSessionTenant,
   seedRbacFixture,
   type IamPermissionName,
+  type PermissionApiPermissionName,
   type PersonPermissionName,
+  type RolePermissionName,
 } from './rbac-test.harness.js';
 
 export { requireDatabaseUrl } from '../config/test-env.js';
@@ -202,6 +204,36 @@ export async function grantMembershipPermissions(
     IamPermissionName,
     'MEMBERSHIP_READ' | 'MEMBERSHIP_CREATE' | 'MEMBERSHIP_DELETE'
   >[],
+): Promise<string> {
+  const fixture = await seedRbacFixture({
+    personId,
+    permissions,
+  });
+
+  await bindSessionTenant(sessionId, fixture.tenantId);
+
+  return fixture.tenantId;
+}
+
+export async function grantRolePermissions(
+  personId: string,
+  sessionId: string,
+  permissions: RolePermissionName[],
+): Promise<string> {
+  const fixture = await seedRbacFixture({
+    personId,
+    permissions,
+  });
+
+  await bindSessionTenant(sessionId, fixture.tenantId);
+
+  return fixture.tenantId;
+}
+
+export async function grantPermissionApiPermissions(
+  personId: string,
+  sessionId: string,
+  permissions: PermissionApiPermissionName[],
 ): Promise<string> {
   const fixture = await seedRbacFixture({
     personId,

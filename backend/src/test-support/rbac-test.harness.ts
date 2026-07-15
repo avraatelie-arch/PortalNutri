@@ -43,10 +43,26 @@ export type MembershipPermissionName =
   | 'MEMBERSHIP_CREATE'
   | 'MEMBERSHIP_DELETE';
 
+export type RolePermissionName =
+  | 'ROLE_READ'
+  | 'ROLE_CREATE'
+  | 'ROLE_ASSIGN'
+  | 'ROLE_ASSIGNMENT_READ'
+  | 'ROLE_REMOVE';
+
+export type PermissionApiPermissionName =
+  | 'PERMISSION_READ'
+  | 'PERMISSION_CREATE'
+  | 'PERMISSION_GRANT'
+  | 'PERMISSION_ASSIGNMENT_READ'
+  | 'PERMISSION_REVOKE';
+
 export type IamPermissionName =
   | PersonPermissionName
   | TenantPermissionName
-  | MembershipPermissionName;
+  | MembershipPermissionName
+  | RolePermissionName
+  | PermissionApiPermissionName;
 
 export interface RbacFixture {
   tenantId: string;
@@ -260,4 +276,17 @@ export function assertPermissionKeyNormalization(): void {
   assert.equal(AuthorizationPermissionKey.MEMBERSHIP_READ, 'membership_read');
   assert.equal(AuthorizationPermissionKey.MEMBERSHIP_CREATE, 'membership_create');
   assert.equal(AuthorizationPermissionKey.MEMBERSHIP_DELETE, 'membership_delete');
+  assert.equal(AuthorizationPermissionKey.ROLE_READ, 'role_read');
+  assert.equal(AuthorizationPermissionKey.ROLE_CREATE, 'role_create');
+  assert.equal(AuthorizationPermissionKey.ROLE_ASSIGN, 'role_assign');
+  assert.equal(AuthorizationPermissionKey.ROLE_ASSIGNMENT_READ, 'role_assignment_read');
+  assert.equal(AuthorizationPermissionKey.ROLE_REMOVE, 'role_remove');
+  assert.equal(AuthorizationPermissionKey.PERMISSION_READ, 'permission_read');
+  assert.equal(AuthorizationPermissionKey.PERMISSION_CREATE, 'permission_create');
+  assert.equal(AuthorizationPermissionKey.PERMISSION_GRANT, 'permission_grant');
+  assert.equal(
+    AuthorizationPermissionKey.PERMISSION_ASSIGNMENT_READ,
+    'permission_assignment_read',
+  );
+  assert.equal(AuthorizationPermissionKey.PERMISSION_REVOKE, 'permission_revoke');
 }

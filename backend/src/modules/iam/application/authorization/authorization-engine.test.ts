@@ -7,6 +7,7 @@ import type { AuthorizationEvaluationInput } from './authorization-evaluation-in
 import { AuthorizationOutcome } from './authorization-decision.js';
 import type { AuthorizationPolicy } from './authorization-policy.js';
 import { AuthorizationResource } from './authorization-resource.js';
+import { EMPTY_RESOLVED_TENANT_IDS } from './resolved-tenant-ids.js';
 
 function createContext(
   overrides: Partial<AuthorizationContext> = {},
@@ -18,6 +19,9 @@ function createContext(
     resource: AuthorizationResource.PERSON,
     action: AuthorizationAction.READ,
     resourceId: 'person-a',
+    scopeRefs: {},
+    resolvedTenantIds: EMPTY_RESOLVED_TENANT_IDS,
+    resolvedScopeRefCount: 0,
     ...overrides,
   };
 }
