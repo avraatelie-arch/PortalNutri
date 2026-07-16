@@ -12,6 +12,10 @@ import {
   registerTenantModule,
 } from '../modules/iam/iam.module.js';
 import {
+  createNutritionDependencies,
+  registerNutritionModule,
+} from '../modules/nutrition/nutrition.module.js';
+import {
   registerDeprecatedHealthAlias,
   registerHealthRoutes,
 } from './routes/health.js';
@@ -21,6 +25,7 @@ export async function registerModules(
   env: Env,
 ): Promise<void> {
   const dependencies = createIamDependencies(env);
+  createNutritionDependencies(env);
 
   registerAuthentication(
     app,
@@ -52,6 +57,7 @@ export async function registerModules(
       await registerMembershipModule(api, dependencies.membershipHandlers);
       await registerRoleModule(api, dependencies.roleHandlers);
       await registerPermissionModule(api, dependencies.permissionHandlers);
+      await registerNutritionModule(api);
     },
     { prefix: '/api' },
   );
