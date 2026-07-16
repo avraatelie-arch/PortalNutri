@@ -175,6 +175,7 @@ model Tenant {
   permissions   Permission[]
   nutritionists Nutritionist[]
   patients      Patient[]
+  patientNutritionistAssignments PatientNutritionistAssignment[]
 
   @@map("tenants")
 }
@@ -220,6 +221,7 @@ model Nutritionist {
   updatedAt DateTime           @updatedAt @map("updated_at")
   person    Person             @relation(fields: [personId], references: [id], onDelete: Restrict)
   tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patientAssignments PatientNutritionistAssignment[]
 
   @@unique([tenantId, crn])
   @@index([personId])
@@ -251,7 +253,40 @@ model Patient {
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @updatedAt @map("updated_at")
   tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  nutritionistAssignments PatientNutritionistAssignment[]
 
   @@index([tenantId])
   @@map("patients")
+}
+
+enum PatientNutritionistAssignmentStatus {
+  ACTIVE
+  REMOVED
+}
+
+enum PatientNutritionistAssignmentRole {
+  PRIMARY
+  SUPPORTING
+}
+
+model PatientNutritionistAssignment {
+  id             String                            @id @default(uuid())
+  tenantId       String                            @map("tenant_id")
+  patientId      String                            @map("patient_id")
+  nutritionistId String                            @map("nutritionist_id")
+  role           PatientNutritionistAssignmentRole
+  status         PatientNutritionistAssignmentStatus @default(ACTIVE)
+  createdAt      DateTime                          @default(now()) @map("created_at")
+  reactivatedAt  DateTime?                         @map("reactivated_at")
+  removedAt      DateTime?                         @map("removed_at")
+  tenant         Tenant                            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient        Patient                           @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  nutritionist   Nutritionist                      @relation(fields: [nutritionistId], references: [id], onDelete: Restrict)
+
+  @@unique([patientId, nutritionistId])
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([nutritionistId])
+  @@index([patientId, status, role])
+  @@map("patient_nutritionist_assignments")
 }

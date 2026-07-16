@@ -19,6 +19,7 @@ import {
   createPatientDependencies,
   registerPatientModule,
 } from '../modules/patient/patient.module.js';
+import { getPlatformEventRuntime } from '../core/composition/platform-event-runtime.js';
 import {
   registerDeprecatedHealthAlias,
   registerHealthRoutes,
@@ -28,9 +29,13 @@ export async function registerModules(
   app: FastifyInstance,
   env: Env,
 ): Promise<void> {
-  const dependencies = createIamDependencies(env);
-  createNutritionDependencies(env);
-  createPatientDependencies(env);
+  const platformEventRuntime = getPlatformEventRuntime();
+  const dependencies = createIamDependencies(
+    env,
+    platformEventRuntime.eventDispatcher,
+  );
+  createNutritionDependencies(env, platformEventRuntime.eventDispatcher);
+  createPatientDependencies(env, platformEventRuntime.eventDispatcher);
 
   registerAuthentication(
     app,

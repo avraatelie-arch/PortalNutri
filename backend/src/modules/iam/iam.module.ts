@@ -40,13 +40,7 @@ import { JoseTokenService } from './infrastructure/tokens/jose-token.service.js'
 import { createAuthorizationService } from './composition/authorization.factory.js';
 import type { AuthorizationService } from './application/authorization/authorization.service.js';
 import { EventDispatcher } from '../../core/application/events/event-dispatcher.js';
-import { AuditEventHandler } from '../../core/infrastructure/audit/audit-event-handler.js';
-import { DefaultAuditLogger } from '../../core/infrastructure/audit/default-audit-logger.js';
-import { DefaultAuditPublisher } from '../../core/infrastructure/audit/default-audit-publisher.js';
-import { InMemoryAuditSink } from '../../core/infrastructure/audit/in-memory-audit-sink.js';
-import { EventHandlerRegistry } from '../../core/infrastructure/events/event-handler-registry.js';
-import { InProcessEventBus } from '../../core/infrastructure/events/in-process-event-bus.js';
-import { DefaultEventBusLogger } from '../../core/infrastructure/events/default-event-bus-logger.js';
+import { getPlatformEventRuntime } from '../../core/composition/platform-event-runtime.js';
 
 export interface IamDependencies {
   authorizationService: AuthorizationService;
@@ -66,7 +60,10 @@ export interface IamDependencies {
   permissionHandlers: PermissionHandlers;
 }
 
-export function createIamDependencies(env: Env): IamDependencies {
+export function createIamDependencies(
+  env: Env,
+  eventDispatcher: EventDispatcher = getPlatformEventRuntime().eventDispatcher,
+): IamDependencies {
   const prisma = getPrismaClient();
   const personRepository = new PrismaPersonRepository(prisma);
   const credentialRepository = new PrismaCredentialRepository(prisma);
@@ -79,17 +76,6 @@ export function createIamDependencies(env: Env): IamDependencies {
   const permissionAssignmentRepository = new PrismaPermissionAssignmentRepository(prisma);
   const passwordHasher = new Argon2PasswordHasher(buildArgon2Config(env));
   const tokenService = new JoseTokenService(buildJwtConfig(env));
-  const eventHandlerRegistry = new EventHandlerRegistry();
-  const auditPublisher = new DefaultAuditPublisher(
-    new InMemoryAuditSink(),
-    new DefaultAuditLogger(),
-  );
-
-  eventHandlerRegistry.registerGlobal(new AuditEventHandler(auditPublisher));
-
-  const eventDispatcher = new EventDispatcher(
-    new InProcessEventBus(eventHandlerRegistry, new DefaultEventBusLogger()),
-  );
 
   const authenticationHandlers = createAuthenticationHandlers({
     personRepository,
