@@ -16,6 +16,10 @@ import {
   registerNutritionModule,
 } from '../modules/nutrition/nutrition.module.js';
 import {
+  createPatientDependencies,
+  registerPatientModule,
+} from '../modules/patient/patient.module.js';
+import {
   registerDeprecatedHealthAlias,
   registerHealthRoutes,
 } from './routes/health.js';
@@ -26,6 +30,7 @@ export async function registerModules(
 ): Promise<void> {
   const dependencies = createIamDependencies(env);
   createNutritionDependencies(env);
+  createPatientDependencies(env);
 
   registerAuthentication(
     app,
@@ -58,6 +63,7 @@ export async function registerModules(
       await registerRoleModule(api, dependencies.roleHandlers);
       await registerPermissionModule(api, dependencies.permissionHandlers);
       await registerNutritionModule(api);
+      await registerPatientModule(api);
     },
     { prefix: '/api' },
   );
