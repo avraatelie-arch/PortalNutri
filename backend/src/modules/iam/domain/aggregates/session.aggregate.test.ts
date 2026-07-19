@@ -20,8 +20,8 @@ function createSession(overrides: {
     refreshTokenHash: RefreshTokenHash.fromHash('hash-1'),
     refreshTokenFamilyId: RefreshTokenFamilyId.generate(),
     refreshTokenExpiresAt:
-      overrides.refreshTokenExpiresAt ?? new Date('2026-07-19T12:00:00.000Z'),
-    expiresAt: overrides.expiresAt ?? new Date('2026-08-11T12:00:00.000Z'),
+      overrides.refreshTokenExpiresAt ?? new Date('2027-07-19T12:00:00.000Z'),
+    expiresAt: overrides.expiresAt ?? new Date('2027-08-11T12:00:00.000Z'),
   });
 }
 
@@ -55,7 +55,7 @@ describe('Session aggregate', () => {
     );
     assert.equal(
       session.getExpiresAt().toISOString(),
-      '2026-08-11T12:00:00.000Z',
+      '2027-08-11T12:00:00.000Z',
     );
   });
 
@@ -107,14 +107,14 @@ describe('Session aggregate', () => {
 
   it('does not extend absolute session expiry on rotation', () => {
     const session = createSession({
-      expiresAt: new Date('2026-08-11T12:00:00.000Z'),
+      expiresAt: new Date('2027-08-11T12:00:00.000Z'),
     });
 
     assert.throws(
       () =>
         session.rotateRefreshToken(
           RefreshTokenHash.fromHash('hash-2'),
-          new Date('2026-08-12T12:00:00.000Z'),
+          new Date('2027-08-12T12:00:00.000Z'),
         ),
       /cannot extend the absolute session lifetime/,
     );

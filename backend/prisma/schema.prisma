@@ -177,6 +177,7 @@ model Tenant {
   patients      Patient[]
   patientNutritionistAssignments PatientNutritionistAssignment[]
   appointments                   Appointment[]
+  clinicalEncounters             ClinicalEncounter[]
 
   @@map("tenants")
 }
@@ -224,6 +225,7 @@ model Nutritionist {
   tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   patientAssignments PatientNutritionistAssignment[]
   appointments       Appointment[]
+  clinicalEncounters ClinicalEncounter[]
 
   @@unique([tenantId, crn])
   @@index([personId])
@@ -257,6 +259,7 @@ model Patient {
   tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   nutritionistAssignments PatientNutritionistAssignment[]
   appointments            Appointment[]
+  clinicalEncounters      ClinicalEncounter[]
 
   @@index([tenantId])
   @@map("patients")
@@ -293,6 +296,7 @@ model Appointment {
   tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   patient            Patient           @relation(fields: [patientId], references: [id], onDelete: Restrict)
   nutritionist       Nutritionist      @relation(fields: [nutritionistId], references: [id], onDelete: Restrict)
+  clinicalEncounter  ClinicalEncounter?
 
   @@index([tenantId])
   @@index([patientId])
@@ -301,6 +305,44 @@ model Appointment {
   @@index([nutritionistId, startsAt, endsAt])
   @@index([patientId, startsAt, endsAt])
   @@map("appointments")
+}
+
+enum ClinicalEncounterType {
+  INITIAL
+  FOLLOW_UP
+  RETURN
+  EMERGENCY
+}
+
+enum ClinicalEncounterStatus {
+  OPEN
+  FINISHED
+  CANCELLED
+}
+
+model ClinicalEncounter {
+  id             String                  @id @default(uuid())
+  tenantId       String                  @map("tenant_id")
+  appointmentId  String?                 @unique @map("appointment_id")
+  patientId      String                  @map("patient_id")
+  nutritionistId String                  @map("nutritionist_id")
+  type           ClinicalEncounterType
+  status         ClinicalEncounterStatus @default(OPEN)
+  notes          String?
+  startedAt      DateTime                @map("started_at")
+  finishedAt     DateTime?               @map("finished_at")
+  createdAt      DateTime                @default(now()) @map("created_at")
+  updatedAt      DateTime                @updatedAt @map("updated_at")
+  tenant         Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  appointment    Appointment?            @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  patient        Patient                 @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  nutritionist   Nutritionist            @relation(fields: [nutritionistId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([nutritionistId])
+  @@index([tenantId, patientId])
+  @@map("clinical_encounters")
 }
 
 enum PatientNutritionistAssignmentStatus {

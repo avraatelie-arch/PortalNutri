@@ -9,6 +9,7 @@ import { createIamDependencies } from '../modules/iam/iam.module.js';
 import { createNutritionDependencies } from '../modules/nutrition/nutrition.module.js';
 import { createPatientDependencies } from '../modules/patient/patient.module.js';
 import { createAppointmentDependencies } from '../modules/appointment/appointment.module.js';
+import { createClinicalDependencies } from '../modules/clinical/clinical.module.js';
 
 const mockEnv = {
   NODE_ENV: 'test',
@@ -32,12 +33,13 @@ describe('Platform event runtime composition', () => {
     resetPlatformEventRuntimeForTests();
   });
 
-  it('reuses one shared EventDispatcher across IAM, Nutrition, Patient and Appointment modules', () => {
+  it('reuses one shared EventDispatcher across IAM, Nutrition, Patient, Appointment and Clinical modules', () => {
     const runtime = getPlatformEventRuntime();
     const iam = createIamDependencies(mockEnv, runtime.eventDispatcher);
     const nutrition = createNutritionDependencies(mockEnv, runtime.eventDispatcher);
     const patient = createPatientDependencies(mockEnv, runtime.eventDispatcher);
     const appointment = createAppointmentDependencies(mockEnv, runtime.eventDispatcher);
+    const clinical = createClinicalDependencies(mockEnv, runtime.eventDispatcher);
 
     assert.equal(iam.eventDispatcher, runtime.eventDispatcher);
     assert.equal(getPlatformEventRuntime().eventDispatcher, runtime.eventDispatcher);
@@ -45,6 +47,7 @@ describe('Platform event runtime composition', () => {
     assert.notEqual(patient.patientHandlers, undefined);
     assert.notEqual(patient.patientNutritionistAssignmentHandlers, undefined);
     assert.notEqual(appointment.appointmentHandlers, undefined);
+    assert.notEqual(clinical.clinicalHandlers, undefined);
   });
 
   it('does not instantiate a second Event Bus when modules use default runtime', () => {
