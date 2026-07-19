@@ -176,6 +176,7 @@ model Tenant {
   nutritionists Nutritionist[]
   patients      Patient[]
   patientNutritionistAssignments PatientNutritionistAssignment[]
+  appointments                   Appointment[]
 
   @@map("tenants")
 }
@@ -222,6 +223,7 @@ model Nutritionist {
   person    Person             @relation(fields: [personId], references: [id], onDelete: Restrict)
   tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   patientAssignments PatientNutritionistAssignment[]
+  appointments       Appointment[]
 
   @@unique([tenantId, crn])
   @@index([personId])
@@ -254,9 +256,51 @@ model Patient {
   updatedAt DateTime      @updatedAt @map("updated_at")
   tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   nutritionistAssignments PatientNutritionistAssignment[]
+  appointments            Appointment[]
 
   @@index([tenantId])
   @@map("patients")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum AppointmentMode {
+  IN_PERSON
+  ONLINE
+}
+
+model Appointment {
+  id                 String            @id @default(uuid())
+  tenantId           String            @map("tenant_id")
+  patientId          String            @map("patient_id")
+  nutritionistId     String            @map("nutritionist_id")
+  startsAt           DateTime          @map("starts_at")
+  endsAt             DateTime          @map("ends_at")
+  mode               AppointmentMode
+  status             AppointmentStatus @default(SCHEDULED)
+  notes              String?
+  cancellationReason String?           @map("cancellation_reason")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  cancelledAt        DateTime?         @map("cancelled_at")
+  completedAt        DateTime?         @map("completed_at")
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient            Patient           @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  nutritionist       Nutritionist      @relation(fields: [nutritionistId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([nutritionistId])
+  @@index([tenantId, startsAt])
+  @@index([nutritionistId, startsAt, endsAt])
+  @@index([patientId, startsAt, endsAt])
+  @@map("appointments")
 }
 
 enum PatientNutritionistAssignmentStatus {

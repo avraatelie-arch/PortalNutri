@@ -19,6 +19,10 @@ import {
   createPatientDependencies,
   registerPatientModule,
 } from '../modules/patient/patient.module.js';
+import {
+  createAppointmentDependencies,
+  registerAppointmentModule,
+} from '../modules/appointment/appointment.module.js';
 import { getPlatformEventRuntime } from '../core/composition/platform-event-runtime.js';
 import {
   registerDeprecatedHealthAlias,
@@ -36,6 +40,7 @@ export async function registerModules(
   );
   createNutritionDependencies(env, platformEventRuntime.eventDispatcher);
   createPatientDependencies(env, platformEventRuntime.eventDispatcher);
+  createAppointmentDependencies(env, platformEventRuntime.eventDispatcher);
 
   registerAuthentication(
     app,
@@ -69,6 +74,7 @@ export async function registerModules(
       await registerPermissionModule(api, dependencies.permissionHandlers);
       await registerNutritionModule(api);
       await registerPatientModule(api);
+      await registerAppointmentModule(api);
     },
     { prefix: '/api' },
   );
