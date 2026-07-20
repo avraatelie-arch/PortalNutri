@@ -1,4 +1,7 @@
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import {
+  ClinicalMeasurementDomainError,
+  ClinicalMeasurementReasonCode,
+} from '../errors/clinical-measurement.domain-error.js';
 import { normalizeClinicalSectionText } from './normalize-clinical-section-text.js';
 
 export const ANTHROPOMETRIC_NOTES_MAX_LENGTH = 5000;
@@ -18,9 +21,10 @@ export class AnthropometricNotes {
     }
 
     if (normalized.length > ANTHROPOMETRIC_NOTES_MAX_LENGTH) {
-      throw new AnthropometricMeasurementDomainError(
+      throw new ClinicalMeasurementDomainError(
         'notes',
-        `exceeds maximum length of ${ANTHROPOMETRIC_NOTES_MAX_LENGTH} characters`,
+        ClinicalMeasurementReasonCode.EXCEEDS_MAX_LENGTH,
+        String(ANTHROPOMETRIC_NOTES_MAX_LENGTH),
       );
     }
 

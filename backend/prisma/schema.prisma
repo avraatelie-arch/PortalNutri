@@ -180,6 +180,7 @@ model Tenant {
   clinicalEncounters             ClinicalEncounter[]
   anamneses                      Anamnesis[]
   anthropometricAssessments      AnthropometricAssessment[]
+  bodyCompositionAssessments     BodyCompositionAssessment[]
 
   @@map("tenants")
 }
@@ -230,6 +231,7 @@ model Nutritionist {
   clinicalEncounters        ClinicalEncounter[]
   anamneses                 Anamnesis[]
   anthropometricAssessments AnthropometricAssessment[]
+  bodyCompositionAssessments BodyCompositionAssessment[]
 
   @@unique([tenantId, crn])
   @@index([personId])
@@ -266,6 +268,7 @@ model Patient {
   clinicalEncounters        ClinicalEncounter[]
   anamneses                 Anamnesis[]
   anthropometricAssessments AnthropometricAssessment[]
+  bodyCompositionAssessments BodyCompositionAssessment[]
 
   @@index([tenantId])
   @@map("patients")
@@ -345,6 +348,7 @@ model ClinicalEncounter {
   nutritionist   Nutritionist            @relation(fields: [nutritionistId], references: [id], onDelete: Restrict)
   anamnesis                 Anamnesis?
   anthropometricAssessments AnthropometricAssessment[]
+  bodyCompositionAssessments BodyCompositionAssessment[]
 
   @@index([tenantId])
   @@index([patientId])
@@ -385,6 +389,7 @@ model Anamnesis {
   patient                  Patient           @relation(fields: [patientId], references: [id], onDelete: Restrict)
   nutritionist              Nutritionist                @relation(fields: [nutritionistId], references: [id], onDelete: Restrict)
   anthropometricAssessments AnthropometricAssessment[]
+  bodyCompositionAssessments BodyCompositionAssessment[]
 
   @@index([tenantId])
   @@index([patientId])
@@ -435,6 +440,7 @@ model AnthropometricAssessment {
   clinicalEncounter           ClinicalEncounter           @relation(fields: [clinicalEncounterId], references: [id], onDelete: Restrict)
   patient                     Patient                     @relation(fields: [patientId], references: [id], onDelete: Restrict)
   nutritionist                Nutritionist                @relation(fields: [nutritionistId], references: [id], onDelete: Restrict)
+  bodyCompositionAssessments  BodyCompositionAssessment[]
 
   @@unique([tenantId, sourceRequestId])
   @@index([tenantId])
@@ -446,6 +452,57 @@ model AnthropometricAssessment {
   @@index([tenantId, patientId, measuredAt])
   @@index([tenantId, clinicalEncounterId])
   @@map("anthropometric_assessments")
+}
+
+enum BodyCompositionMeasurementSource {
+  MANUAL
+  BIOIMPEDANCE
+  DEXA
+  SKINFOLD
+  OTHER
+}
+
+model BodyCompositionAssessment {
+  id                         String                           @id @default(uuid())
+  tenantId                   String                           @map("tenant_id")
+  anamnesisId                String                           @map("anamnesis_id")
+  clinicalEncounterId        String                           @map("clinical_encounter_id")
+  patientId                  String                           @map("patient_id")
+  nutritionistId             String                           @map("nutritionist_id")
+  anthropometricAssessmentId String?                          @map("anthropometric_assessment_id")
+  sourceRequestId            String?                          @map("source_request_id")
+  bodyFatPercentage          Decimal                          @map("body_fat_percentage") @db.Decimal(5, 2)
+  leanMassKg                 Decimal?                         @map("lean_mass_kg") @db.Decimal(6, 2)
+  fatMassKg                  Decimal?                         @map("fat_mass_kg") @db.Decimal(6, 2)
+  muscleMassKg               Decimal?                         @map("muscle_mass_kg") @db.Decimal(6, 2)
+  boneMassKg                 Decimal?                         @map("bone_mass_kg") @db.Decimal(6, 2)
+  bodyWaterPercentage        Decimal?                         @map("body_water_percentage") @db.Decimal(5, 2)
+  visceralFatLevel           Decimal?                         @map("visceral_fat_level") @db.Decimal(6, 2)
+  basalMetabolicRate         Int?                             @map("basal_metabolic_rate")
+  metabolicAge               Int?                             @map("metabolic_age")
+  notes                      String?                          @db.Text
+  measurementSource          BodyCompositionMeasurementSource @map("measurement_source")
+  measuredAt                 DateTime                         @map("measured_at")
+  version                    Int                              @default(1)
+  createdAt                  DateTime                         @default(now()) @map("created_at")
+  tenant                     Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  anamnesis                  Anamnesis                        @relation(fields: [anamnesisId], references: [id], onDelete: Restrict)
+  clinicalEncounter          ClinicalEncounter                @relation(fields: [clinicalEncounterId], references: [id], onDelete: Restrict)
+  patient                    Patient                          @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  nutritionist               Nutritionist                     @relation(fields: [nutritionistId], references: [id], onDelete: Restrict)
+  anthropometricAssessment   AnthropometricAssessment?        @relation(fields: [anthropometricAssessmentId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, sourceRequestId])
+  @@index([tenantId])
+  @@index([anamnesisId])
+  @@index([patientId])
+  @@index([clinicalEncounterId])
+  @@index([nutritionistId])
+  @@index([anthropometricAssessmentId])
+  @@index([tenantId, anamnesisId])
+  @@index([tenantId, patientId, measuredAt])
+  @@index([tenantId, clinicalEncounterId])
+  @@map("body_composition_assessments")
 }
 
 enum PatientNutritionistAssignmentStatus {

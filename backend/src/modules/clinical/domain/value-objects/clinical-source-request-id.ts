@@ -1,4 +1,7 @@
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import {
+  ClinicalMeasurementDomainError,
+  ClinicalMeasurementReasonCode,
+} from '../errors/clinical-measurement.domain-error.js';
 
 const SOURCE_REQUEST_ID_MAX_LENGTH = 100;
 const SOURCE_REQUEST_ID_PATTERN = /^[A-Za-z0-9_:-]+$/;
@@ -18,16 +21,17 @@ export class ClinicalSourceRequestId {
     }
 
     if (trimmed.length > SOURCE_REQUEST_ID_MAX_LENGTH) {
-      throw new AnthropometricMeasurementDomainError(
+      throw new ClinicalMeasurementDomainError(
         'sourceRequestId',
-        `exceeds maximum length of ${SOURCE_REQUEST_ID_MAX_LENGTH} characters`,
+        ClinicalMeasurementReasonCode.EXCEEDS_MAX_LENGTH,
+        String(SOURCE_REQUEST_ID_MAX_LENGTH),
       );
     }
 
     if (!SOURCE_REQUEST_ID_PATTERN.test(trimmed)) {
-      throw new AnthropometricMeasurementDomainError(
+      throw new ClinicalMeasurementDomainError(
         'sourceRequestId',
-        'contains invalid characters',
+        ClinicalMeasurementReasonCode.INVALID_CHARACTERS,
       );
     }
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import { ClinicalMeasurementDomainError } from '../errors/clinical-measurement.domain-error.js';
 import { BodyWeight } from './body-weight.js';
 
 describe('BodyWeight', () => {
@@ -13,21 +13,21 @@ describe('BodyWeight', () => {
   it('rejects zero', () => {
     assert.throws(
       () => BodyWeight.create('0'),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 
   it('rejects negative values', () => {
     assert.throws(
       () => BodyWeight.create('-1'),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 
   it('rejects values above maximum', () => {
     assert.throws(
       () => BodyWeight.create('500.01'),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 
@@ -39,10 +39,10 @@ describe('BodyWeight', () => {
   });
 
   it('rejects NaN and Infinity', () => {
-    assert.throws(() => BodyWeight.create('NaN'), AnthropometricMeasurementDomainError);
+    assert.throws(() => BodyWeight.create('NaN'), ClinicalMeasurementDomainError);
     assert.throws(
       () => BodyWeight.create('Infinity'),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 });

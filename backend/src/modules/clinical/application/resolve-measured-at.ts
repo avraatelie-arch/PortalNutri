@@ -1,14 +1,19 @@
 import type { Clock } from './ports/clock.port.js';
 import { AnthropometricAssessmentBeforeBirthError } from './errors/anthropometric-assessment-before-birth.error.js';
 import { AnthropometricAssessmentFutureDateError } from './errors/anthropometric-assessment-future-date.error.js';
+import {
+  MEASURED_AT_FUTURE_TOLERANCE_MS,
+  resolveClinicalMeasuredAt,
+  validateClinicalMeasuredAt,
+} from './resolve-clinical-measured-at.js';
 
-export const MEASURED_AT_FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
+export { MEASURED_AT_FUTURE_TOLERANCE_MS };
 
 export function resolveMeasuredAt(
   measuredAt: Date | undefined,
   clock: Clock,
 ): Date {
-  return measuredAt ?? clock.now();
+  return resolveClinicalMeasuredAt(measuredAt, clock);
 }
 
 export function validateMeasuredAt(
@@ -18,13 +23,8 @@ export function validateMeasuredAt(
   tenantId: string,
   patientId: string,
 ): void {
-  const now = clock.now();
-
-  if (measuredAt.getTime() > now.getTime() + MEASURED_AT_FUTURE_TOLERANCE_MS) {
-    throw new AnthropometricAssessmentFutureDateError(tenantId, patientId);
-  }
-
-  if (birthDate && measuredAt.getTime() < birthDate.getTime()) {
-    throw new AnthropometricAssessmentBeforeBirthError(tenantId, patientId);
-  }
+  validateClinicalMeasuredAt(measuredAt, clock, birthDate, {
+    onFutureDate: () => new AnthropometricAssessmentFutureDateError(tenantId, patientId),
+    onBeforeBirth: () => new AnthropometricAssessmentBeforeBirthError(tenantId, patientId),
+  });
 }

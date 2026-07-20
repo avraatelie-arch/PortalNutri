@@ -10,9 +10,12 @@ import {
 import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { DefaultAnamnesisCompletionPolicy } from './domain/policies/anamnesis-completion-policy.js';
 import { DefaultBodyMassIndexClassificationPolicy } from './domain/policies/body-mass-index-classification-policy.js';
+import { BodyCompositionConsistencyPolicy } from './domain/policies/body-composition-consistency-policy.js';
 import { PrismaClinicalEncounterRepository } from './infrastructure/repositories/prisma-clinical-encounter.repository.js';
 import { PrismaAnamnesisRepository } from './infrastructure/repositories/prisma-anamnesis.repository.js';
 import { PrismaAnthropometricAssessmentRepository } from './infrastructure/repositories/prisma-anthropometric-assessment.repository.js';
+import { PrismaBodyCompositionAssessmentRepository } from './infrastructure/repositories/prisma-body-composition-assessment.repository.js';
+import { PrismaAnthropometricAssessmentDirectoryAdapter } from './infrastructure/adapters/prisma-anthropometric-assessment-directory.adapter.js';
 import { PrismaTenantDirectoryAdapter } from './infrastructure/adapters/prisma-tenant-directory.adapter.js';
 import { PrismaPatientDirectoryAdapter } from './infrastructure/adapters/prisma-patient-directory.adapter.js';
 import { PrismaNutritionistDirectoryAdapter } from './infrastructure/adapters/prisma-nutritionist-directory.adapter.js';
@@ -37,6 +40,10 @@ export function createClinicalDependencies(
       anamnesisRepository: new PrismaAnamnesisRepository(prisma),
       anthropometricAssessmentRepository:
         new PrismaAnthropometricAssessmentRepository(prisma),
+      bodyCompositionAssessmentRepository:
+        new PrismaBodyCompositionAssessmentRepository(prisma),
+      anthropometricAssessmentDirectory:
+        new PrismaAnthropometricAssessmentDirectoryAdapter(prisma),
       tenantDirectory: new PrismaTenantDirectoryAdapter(prisma),
       patientDirectory: new PrismaPatientDirectoryAdapter(prisma),
       nutritionistDirectory: new PrismaNutritionistDirectoryAdapter(prisma),
@@ -51,6 +58,7 @@ export function createClinicalDependencies(
       anamnesisCompletionPolicy: new DefaultAnamnesisCompletionPolicy(),
       bodyMassIndexClassificationPolicy:
         new DefaultBodyMassIndexClassificationPolicy(),
+      bodyCompositionConsistencyPolicy: new BodyCompositionConsistencyPolicy(),
       clock: new SystemClock(),
       eventDispatcher,
     }),

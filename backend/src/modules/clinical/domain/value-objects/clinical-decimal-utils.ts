@@ -1,5 +1,8 @@
 import { Decimal } from '@prisma/client/runtime/library';
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import {
+  ClinicalMeasurementDomainError,
+  ClinicalMeasurementReasonCode,
+} from '../errors/clinical-measurement.domain-error.js';
 
 export function parseClinicalDecimal(
   raw: string,
@@ -9,11 +12,17 @@ export function parseClinicalDecimal(
   const trimmed = raw.trim();
 
   if (trimmed.length === 0) {
-    throw new AnthropometricMeasurementDomainError(fieldName, 'value is required');
+    throw new ClinicalMeasurementDomainError(
+      fieldName,
+      ClinicalMeasurementReasonCode.REQUIRED,
+    );
   }
 
   if (!/^-?\d+(\.\d+)?$/.test(trimmed)) {
-    throw new AnthropometricMeasurementDomainError(fieldName, 'invalid decimal format');
+    throw new ClinicalMeasurementDomainError(
+      fieldName,
+      ClinicalMeasurementReasonCode.INVALID_DECIMAL_FORMAT,
+    );
   }
 
   let decimal: Decimal;
@@ -22,11 +31,17 @@ export function parseClinicalDecimal(
     decimal = new Decimal(trimmed);
   }
   catch {
-    throw new AnthropometricMeasurementDomainError(fieldName, 'invalid decimal format');
+    throw new ClinicalMeasurementDomainError(
+      fieldName,
+      ClinicalMeasurementReasonCode.INVALID_DECIMAL_FORMAT,
+    );
   }
 
   if (!decimal.isFinite()) {
-    throw new AnthropometricMeasurementDomainError(fieldName, 'must be a finite number');
+    throw new ClinicalMeasurementDomainError(
+      fieldName,
+      ClinicalMeasurementReasonCode.NOT_FINITE,
+    );
   }
 
   assertScale(decimal, fieldName, maxScale);
@@ -95,9 +110,10 @@ function assertScale(value: Decimal, fieldName: string, maxScale: number): void 
   const decimalPlaces = countDecimalPlaces(value.toString());
 
   if (decimalPlaces > maxScale) {
-    throw new AnthropometricMeasurementDomainError(
+    throw new ClinicalMeasurementDomainError(
       fieldName,
-      `precision exceeds ${maxScale} decimal places`,
+      ClinicalMeasurementReasonCode.PRECISION_EXCEEDED,
+      String(maxScale),
     );
   }
 }

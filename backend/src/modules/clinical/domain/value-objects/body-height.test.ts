@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import { ClinicalMeasurementDomainError } from '../errors/clinical-measurement.domain-error.js';
 import { BodyHeight } from './body-height.js';
 
 describe('BodyHeight', () => {
@@ -12,14 +12,14 @@ describe('BodyHeight', () => {
   it('rejects values below minimum', () => {
     assert.throws(
       () => BodyHeight.create('29.99'),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 
   it('rejects values above maximum', () => {
     assert.throws(
       () => BodyHeight.create('300.01'),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 

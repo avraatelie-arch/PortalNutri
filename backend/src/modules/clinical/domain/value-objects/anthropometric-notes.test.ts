@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import { ClinicalMeasurementDomainError } from '../errors/clinical-measurement.domain-error.js';
 import { AnthropometricNotes } from './anthropometric-notes.js';
 
 describe('AnthropometricNotes', () => {
@@ -18,7 +18,7 @@ describe('AnthropometricNotes', () => {
   it('rejects notes exceeding maximum length', () => {
     assert.throws(
       () => AnthropometricNotes.create('a'.repeat(5001)),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 

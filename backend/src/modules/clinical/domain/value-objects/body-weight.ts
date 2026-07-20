@@ -1,5 +1,8 @@
 import type { Decimal } from '@prisma/client/runtime/library';
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import {
+  ClinicalMeasurementDomainError,
+  ClinicalMeasurementReasonCode,
+} from '../errors/clinical-measurement.domain-error.js';
 import {
   formatClinicalDecimal,
   isClinicalDecimalPositive,
@@ -16,13 +19,19 @@ export class BodyWeight {
     const value = parseClinicalDecimal(raw, 'weightKg', WEIGHT_SCALE);
 
     if (isClinicalDecimalZero(value) || !isClinicalDecimalPositive(value)) {
-      throw new AnthropometricMeasurementDomainError('weightKg', 'must be greater than zero');
+      throw new ClinicalMeasurementDomainError(
+        'weightKg',
+        ClinicalMeasurementReasonCode.MUST_BE_GREATER_THAN_ZERO,
+      );
     }
 
     const maxWeight = parseClinicalDecimal('500', 'weightKg', WEIGHT_SCALE);
 
     if (value.greaterThan(maxWeight)) {
-      throw new AnthropometricMeasurementDomainError('weightKg', 'exceeds maximum allowed value');
+      throw new ClinicalMeasurementDomainError(
+        'weightKg',
+        ClinicalMeasurementReasonCode.EXCEEDS_MAXIMUM,
+      );
     }
 
     return new BodyWeight(value);

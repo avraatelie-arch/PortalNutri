@@ -10,8 +10,11 @@ import type { PatientClinicalDirectoryPort } from '../application/ports/patient-
 import type { ClinicalEncounterRepository } from '../domain/repositories/clinical-encounter-repository.js';
 import type { AnamnesisRepository } from '../domain/repositories/anamnesis-repository.js';
 import type { AnthropometricAssessmentRepository } from '../domain/repositories/anthropometric-assessment-repository.js';
+import type { BodyCompositionAssessmentRepository } from '../domain/repositories/body-composition-assessment-repository.js';
 import type { AnamnesisCompletionPolicy } from '../domain/policies/anamnesis-completion-policy.js';
 import type { BodyMassIndexClassificationPolicy } from '../domain/policies/body-mass-index-classification-policy.js';
+import type { BodyCompositionConsistencyPolicy } from '../domain/policies/body-composition-consistency-policy.js';
+import type { AnthropometricAssessmentDirectoryPort } from '../application/ports/anthropometric-assessment-directory.port.js';
 import { StartClinicalEncounterHandler } from '../application/start-clinical-encounter/start-clinical-encounter.handler.js';
 import { FinishClinicalEncounterHandler } from '../application/finish-clinical-encounter/finish-clinical-encounter.handler.js';
 import { CancelClinicalEncounterHandler } from '../application/cancel-clinical-encounter/cancel-clinical-encounter.handler.js';
@@ -26,11 +29,17 @@ import { RecordAnthropometricAssessmentHandler } from '../application/record-ant
 import { FindAnthropometricAssessmentHandler } from '../application/find-anthropometric-assessment/find-anthropometric-assessment.handler.js';
 import { FindAnthropometricAssessmentsByAnamnesisHandler } from '../application/find-anthropometric-assessments-by-anamnesis/find-anthropometric-assessments-by-anamnesis.handler.js';
 import { FindAnthropometricAssessmentsByPatientHandler } from '../application/find-anthropometric-assessments-by-patient/find-anthropometric-assessments-by-patient.handler.js';
+import { RecordBodyCompositionAssessmentHandler } from '../application/record-body-composition-assessment/record-body-composition-assessment.handler.js';
+import { FindBodyCompositionAssessmentHandler } from '../application/find-body-composition-assessment/find-body-composition-assessment.handler.js';
+import { FindBodyCompositionAssessmentsByAnamnesisHandler } from '../application/find-body-composition-assessments-by-anamnesis/find-body-composition-assessments-by-anamnesis.handler.js';
+import { FindBodyCompositionAssessmentsByPatientHandler } from '../application/find-body-composition-assessments-by-patient/find-body-composition-assessments-by-patient.handler.js';
 
 export interface ClinicalFactoryDependencies {
   encounterRepository: ClinicalEncounterRepository;
   anamnesisRepository: AnamnesisRepository;
   anthropometricAssessmentRepository: AnthropometricAssessmentRepository;
+  bodyCompositionAssessmentRepository: BodyCompositionAssessmentRepository;
+  anthropometricAssessmentDirectory: AnthropometricAssessmentDirectoryPort;
   tenantDirectory: TenantDirectoryPort;
   patientDirectory: PatientDirectoryPort;
   nutritionistDirectory: NutritionistDirectoryPort;
@@ -40,6 +49,7 @@ export interface ClinicalFactoryDependencies {
   patientClinicalDirectory: PatientClinicalDirectoryPort;
   anamnesisCompletionPolicy: AnamnesisCompletionPolicy;
   bodyMassIndexClassificationPolicy: BodyMassIndexClassificationPolicy;
+  bodyCompositionConsistencyPolicy: BodyCompositionConsistencyPolicy;
   clock: Clock;
   eventDispatcher: EventDispatcher;
 }
@@ -59,6 +69,10 @@ export interface ClinicalHandlers {
   findAnthropometricAssessmentHandler: FindAnthropometricAssessmentHandler;
   findAnthropometricAssessmentsByAnamnesisHandler: FindAnthropometricAssessmentsByAnamnesisHandler;
   findAnthropometricAssessmentsByPatientHandler: FindAnthropometricAssessmentsByPatientHandler;
+  recordBodyCompositionAssessmentHandler: RecordBodyCompositionAssessmentHandler;
+  findBodyCompositionAssessmentHandler: FindBodyCompositionAssessmentHandler;
+  findBodyCompositionAssessmentsByAnamnesisHandler: FindBodyCompositionAssessmentsByAnamnesisHandler;
+  findBodyCompositionAssessmentsByPatientHandler: FindBodyCompositionAssessmentsByPatientHandler;
 }
 
 export function createClinicalHandlers(
@@ -133,6 +147,28 @@ export function createClinicalHandlers(
     findAnthropometricAssessmentsByPatientHandler:
       new FindAnthropometricAssessmentsByPatientHandler(
         deps.anthropometricAssessmentRepository,
+      ),
+    recordBodyCompositionAssessmentHandler: new RecordBodyCompositionAssessmentHandler(
+      deps.bodyCompositionAssessmentRepository,
+      deps.tenantDirectory,
+      deps.anamnesisDirectory,
+      deps.clinicalEncounterDirectory,
+      deps.patientClinicalDirectory,
+      deps.anthropometricAssessmentDirectory,
+      deps.bodyCompositionConsistencyPolicy,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    findBodyCompositionAssessmentHandler: new FindBodyCompositionAssessmentHandler(
+      deps.bodyCompositionAssessmentRepository,
+    ),
+    findBodyCompositionAssessmentsByAnamnesisHandler:
+      new FindBodyCompositionAssessmentsByAnamnesisHandler(
+        deps.bodyCompositionAssessmentRepository,
+      ),
+    findBodyCompositionAssessmentsByPatientHandler:
+      new FindBodyCompositionAssessmentsByPatientHandler(
+        deps.bodyCompositionAssessmentRepository,
       ),
   };
 }

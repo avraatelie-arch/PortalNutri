@@ -52,6 +52,10 @@ describe('Platform event runtime composition', () => {
       clinical.clinicalHandlers.recordAnthropometricAssessmentHandler,
       undefined,
     );
+    assert.notEqual(
+      clinical.clinicalHandlers.recordBodyCompositionAssessmentHandler,
+      undefined,
+    );
   });
 
   it('does not instantiate a second Event Bus when modules use default runtime', () => {

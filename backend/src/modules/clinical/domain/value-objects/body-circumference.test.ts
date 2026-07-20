@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import { ClinicalMeasurementDomainError } from '../errors/clinical-measurement.domain-error.js';
 import { BodyCircumference } from './body-circumference.js';
 
 const FIELD = 'waistCircumferenceCm';
@@ -21,14 +21,14 @@ describe('BodyCircumference', () => {
   it('rejects zero', () => {
     assert.throws(
       () => BodyCircumference.create('0', FIELD),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 
   it('rejects values above maximum', () => {
     assert.throws(
       () => BodyCircumference.create('500.01', FIELD),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 

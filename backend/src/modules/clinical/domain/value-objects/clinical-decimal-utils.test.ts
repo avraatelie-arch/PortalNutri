@@ -1,7 +1,7 @@
 import { Decimal } from '@prisma/client/runtime/library';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import { ClinicalMeasurementDomainError } from '../errors/clinical-measurement.domain-error.js';
 import {
   compareClinicalDecimals,
   decimalFromPrisma,
@@ -24,15 +24,15 @@ describe('clinical-decimal-utils', () => {
   it('rejects empty, NaN and Infinity values', () => {
     assert.throws(
       () => parseClinicalDecimal('', 'weightKg', 2),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
     assert.throws(
       () => parseClinicalDecimal('NaN', 'weightKg', 2),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
     assert.throws(
       () => parseClinicalDecimal('Infinity', 'weightKg', 2),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 

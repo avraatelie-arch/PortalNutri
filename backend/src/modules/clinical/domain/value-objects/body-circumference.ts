@@ -1,5 +1,8 @@
 import type { Decimal } from '@prisma/client/runtime/library';
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import {
+  ClinicalMeasurementDomainError,
+  ClinicalMeasurementReasonCode,
+} from '../errors/clinical-measurement.domain-error.js';
 import {
   formatClinicalDecimal,
   isClinicalDecimalPositive,
@@ -48,13 +51,19 @@ export class BodyCircumference {
     fieldName: string,
   ): BodyCircumference {
     if (isClinicalDecimalZero(value) || !isClinicalDecimalPositive(value)) {
-      throw new AnthropometricMeasurementDomainError(fieldName, 'must be greater than zero');
+      throw new ClinicalMeasurementDomainError(
+        fieldName,
+        ClinicalMeasurementReasonCode.MUST_BE_GREATER_THAN_ZERO,
+      );
     }
 
     const maxCircumference = parseClinicalDecimal('500', fieldName, CIRCUMFERENCE_SCALE);
 
     if (value.greaterThan(maxCircumference)) {
-      throw new AnthropometricMeasurementDomainError(fieldName, 'exceeds maximum allowed value');
+      throw new ClinicalMeasurementDomainError(
+        fieldName,
+        ClinicalMeasurementReasonCode.EXCEEDS_MAXIMUM,
+      );
     }
 
     return new BodyCircumference(value);

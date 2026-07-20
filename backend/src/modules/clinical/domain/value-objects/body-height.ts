@@ -1,5 +1,8 @@
 import type { Decimal } from '@prisma/client/runtime/library';
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import {
+  ClinicalMeasurementDomainError,
+  ClinicalMeasurementReasonCode,
+} from '../errors/clinical-measurement.domain-error.js';
 import {
   formatClinicalDecimal,
   parseClinicalDecimal,
@@ -16,11 +19,17 @@ export class BodyHeight {
     const maxHeight = parseClinicalDecimal('300', 'heightCm', HEIGHT_SCALE);
 
     if (value.lessThan(minHeight)) {
-      throw new AnthropometricMeasurementDomainError('heightCm', 'is below minimum allowed value');
+      throw new ClinicalMeasurementDomainError(
+        'heightCm',
+        ClinicalMeasurementReasonCode.BELOW_MINIMUM,
+      );
     }
 
     if (value.greaterThan(maxHeight)) {
-      throw new AnthropometricMeasurementDomainError('heightCm', 'exceeds maximum allowed value');
+      throw new ClinicalMeasurementDomainError(
+        'heightCm',
+        ClinicalMeasurementReasonCode.EXCEEDS_MAXIMUM,
+      );
     }
 
     return new BodyHeight(value);

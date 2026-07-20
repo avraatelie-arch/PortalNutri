@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { AnthropometricMeasurementDomainError } from '../errors/anthropometric-measurement.domain-error.js';
+import { ClinicalMeasurementDomainError } from '../errors/clinical-measurement.domain-error.js';
 import { ClinicalSourceRequestId } from './clinical-source-request-id.js';
 
 describe('ClinicalSourceRequestId', () => {
@@ -18,18 +18,18 @@ describe('ClinicalSourceRequestId', () => {
   it('rejects values exceeding maximum length', () => {
     assert.throws(
       () => ClinicalSourceRequestId.createOptional('a'.repeat(101)),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 
   it('rejects unsafe characters', () => {
     assert.throws(
       () => ClinicalSourceRequestId.createOptional('req 001'),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
     assert.throws(
       () => ClinicalSourceRequestId.createOptional('req@001'),
-      AnthropometricMeasurementDomainError,
+      ClinicalMeasurementDomainError,
     );
   });
 });
