@@ -178,6 +178,7 @@ model Tenant {
   patientNutritionistAssignments PatientNutritionistAssignment[]
   appointments                   Appointment[]
   clinicalEncounters             ClinicalEncounter[]
+  anamneses                      Anamnesis[]
 
   @@map("tenants")
 }
@@ -226,6 +227,7 @@ model Nutritionist {
   patientAssignments PatientNutritionistAssignment[]
   appointments       Appointment[]
   clinicalEncounters ClinicalEncounter[]
+  anamneses          Anamnesis[]
 
   @@unique([tenantId, crn])
   @@index([personId])
@@ -260,6 +262,7 @@ model Patient {
   nutritionistAssignments PatientNutritionistAssignment[]
   appointments            Appointment[]
   clinicalEncounters      ClinicalEncounter[]
+  anamneses               Anamnesis[]
 
   @@index([tenantId])
   @@map("patients")
@@ -337,12 +340,55 @@ model ClinicalEncounter {
   appointment    Appointment?            @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
   patient        Patient                 @relation(fields: [patientId], references: [id], onDelete: Restrict)
   nutritionist   Nutritionist            @relation(fields: [nutritionistId], references: [id], onDelete: Restrict)
+  anamnesis      Anamnesis?
 
   @@index([tenantId])
   @@index([patientId])
   @@index([nutritionistId])
   @@index([tenantId, patientId])
   @@map("clinical_encounters")
+}
+
+enum AnamnesisStatus {
+  DRAFT
+  COMPLETED
+}
+
+model Anamnesis {
+  id                       String          @id @default(uuid())
+  tenantId                 String          @map("tenant_id")
+  clinicalEncounterId      String          @unique @map("clinical_encounter_id")
+  patientId                String          @map("patient_id")
+  nutritionistId           String          @map("nutritionist_id")
+  status                   AnamnesisStatus @default(DRAFT)
+  version                  Int             @default(1)
+  chiefComplaint           String?         @map("chief_complaint") @db.Text
+  currentHistory           String?         @map("current_history") @db.Text
+  medicalHistory           String?         @map("medical_history") @db.Text
+  familyHistory            String?         @map("family_history") @db.Text
+  gastrointestinalHistory  String?         @map("gastrointestinal_history") @db.Text
+  dietaryHistory           String?         @map("dietary_history") @db.Text
+  lifestyleHistory         String?         @map("lifestyle_history") @db.Text
+  medicationHistory        String?         @map("medication_history") @db.Text
+  supplementHistory        String?         @map("supplement_history") @db.Text
+  allergiesAndIntolerances String?         @map("allergies_and_intolerances") @db.Text
+  observations             String?         @db.Text
+  completedAt              DateTime?       @map("completed_at")
+  createdAt                DateTime        @default(now()) @map("created_at")
+  updatedAt                DateTime        @updatedAt @map("updated_at")
+  tenant                   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  clinicalEncounter        ClinicalEncounter @relation(fields: [clinicalEncounterId], references: [id], onDelete: Restrict)
+  patient                  Patient           @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  nutritionist             Nutritionist      @relation(fields: [nutritionistId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([nutritionistId])
+  @@index([tenantId, patientId])
+  @@index([tenantId, nutritionistId])
+  @@index([tenantId, clinicalEncounterId])
+  @@index([status])
+  @@map("anamneses")
 }
 
 enum PatientNutritionistAssignmentStatus {
