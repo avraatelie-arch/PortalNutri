@@ -48,6 +48,10 @@ describe('Platform event runtime composition', () => {
     assert.notEqual(patient.patientNutritionistAssignmentHandlers, undefined);
     assert.notEqual(appointment.appointmentHandlers, undefined);
     assert.notEqual(clinical.clinicalHandlers, undefined);
+    assert.notEqual(
+      clinical.clinicalHandlers.recordAnthropometricAssessmentHandler,
+      undefined,
+    );
   });
 
   it('does not instantiate a second Event Bus when modules use default runtime', () => {

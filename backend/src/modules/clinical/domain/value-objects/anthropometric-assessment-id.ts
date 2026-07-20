@@ -1,0 +1,35 @@
+import { randomUUID } from 'node:crypto';
+import { DomainError } from '../errors/domain-error.js';
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export class AnthropometricAssessmentId {
+  private constructor(private readonly value: string) {}
+
+  static create(value?: string): AnthropometricAssessmentId {
+    if (value === undefined) {
+      return new AnthropometricAssessmentId(randomUUID());
+    }
+
+    const normalized = value.trim();
+
+    if (!normalized) {
+      throw new DomainError('Anthropometric assessment id is required.');
+    }
+
+    if (!UUID_PATTERN.test(normalized)) {
+      throw new DomainError('Anthropometric assessment id must be a valid UUID.');
+    }
+
+    return new AnthropometricAssessmentId(normalized);
+  }
+
+  static generate(): AnthropometricAssessmentId {
+    return new AnthropometricAssessmentId(randomUUID());
+  }
+
+  toString(): string {
+    return this.value;
+  }
+}
