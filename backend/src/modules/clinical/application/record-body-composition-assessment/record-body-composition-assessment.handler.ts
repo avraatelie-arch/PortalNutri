@@ -15,43 +15,35 @@ import { LeanMass } from '../../domain/value-objects/lean-mass.js';
 import { MetabolicAge } from '../../domain/value-objects/metabolic-age.js';
 import { MuscleMass } from '../../domain/value-objects/muscle-mass.js';
 import { VisceralFatLevel } from '../../domain/value-objects/visceral-fat-level.js';
+import { createBodyCompositionClinicalRecordContextErrors } from '../body-composition-clinical-record-context.errors.js';
 import { toBodyCompositionAssessmentResult } from '../body-composition-assessment-result.js';
+import { buildClinicalRecordContext } from '../clinical-record-context.js';
 import { executeBodyCompositionUseCase } from '../execute-body-composition-use-case.js';
-import { AnamnesisClinicalEncounterMismatchForBodyCompositionError } from '../errors/anamnesis-clinical-encounter-mismatch-for-body-composition.error.js';
-import { AnamnesisNotDraftForBodyCompositionError } from '../errors/anamnesis-not-draft-for-body-composition.error.js';
-import { AnamnesisNotFoundForBodyCompositionError } from '../errors/anamnesis-not-found-for-body-composition.error.js';
-import { AnamnesisNutritionistMismatchForBodyCompositionError } from '../errors/anamnesis-nutritionist-mismatch-for-body-composition.error.js';
-import { AnamnesisPatientMismatchForBodyCompositionError } from '../errors/anamnesis-patient-mismatch-for-body-composition.error.js';
 import { AnthropometricAssessmentAnamnesisMismatchForBodyCompositionError } from '../errors/anthropometric-assessment-anamnesis-mismatch-for-body-composition.error.js';
 import { AnthropometricAssessmentNotFoundForBodyCompositionError } from '../errors/anthropometric-assessment-not-found-for-body-composition.error.js';
 import { AnthropometricAssessmentPatientMismatchForBodyCompositionError } from '../errors/anthropometric-assessment-patient-mismatch-for-body-composition.error.js';
 import { AnthropometricAssessmentTenantMismatchForBodyCompositionError } from '../errors/anthropometric-assessment-tenant-mismatch-for-body-composition.error.js';
 import { BodyCompositionAssessmentDuplicateRequestError } from '../errors/body-composition-assessment-duplicate-request.error.js';
-import { ClinicalEncounterNotFoundForBodyCompositionError } from '../errors/clinical-encounter-not-found-for-body-composition.error.js';
-import { ClinicalEncounterNotOpenForBodyCompositionError } from '../errors/clinical-encounter-not-open-for-body-composition.error.js';
-import { PatientInactiveForBodyCompositionError } from '../errors/patient-inactive-for-body-composition.error.js';
-import { PatientNotFoundForBodyCompositionError } from '../errors/patient-not-found-for-body-composition.error.js';
-import { TenantInactiveForBodyCompositionError } from '../errors/tenant-inactive-for-body-composition.error.js';
-import { TenantNotFoundForBodyCompositionError } from '../errors/tenant-not-found-for-body-composition.error.js';
 import type { AnamnesisDirectoryPort } from '../ports/anamnesis-directory.port.js';
 import type { AnthropometricAssessmentDirectoryPort } from '../ports/anthropometric-assessment-directory.port.js';
 import type { ClinicalEncounterDirectoryPort } from '../ports/clinical-encounter-directory.port.js';
 import type { Clock } from '../ports/clock.port.js';
+import type { NutritionistDirectoryPort } from '../ports/nutritionist-directory.port.js';
 import type { PatientClinicalDirectoryPort } from '../ports/patient-clinical-directory.port.js';
 import type { TenantDirectoryPort } from '../ports/tenant-directory.port.js';
-import {
-  resolveBodyCompositionMeasuredAt,
-  validateBodyCompositionMeasuredAt,
-} from '../resolve-body-composition-measured-at.js';
 import { RecordBodyCompositionAssessmentCommand } from './record-body-composition-assessment.command.js';
 
 export class RecordBodyCompositionAssessmentHandler {
+  private readonly clinicalRecordContextErrors =
+    createBodyCompositionClinicalRecordContextErrors();
+
   constructor(
     private readonly bodyCompositionAssessmentRepository: BodyCompositionAssessmentRepository,
     private readonly tenantDirectory: TenantDirectoryPort,
     private readonly anamnesisDirectory: AnamnesisDirectoryPort,
     private readonly clinicalEncounterDirectory: ClinicalEncounterDirectoryPort,
     private readonly patientClinicalDirectory: PatientClinicalDirectoryPort,
+    private readonly nutritionistDirectory: NutritionistDirectoryPort,
     private readonly anthropometricAssessmentDirectory: AnthropometricAssessmentDirectoryPort,
     private readonly bodyCompositionConsistencyPolicy: BodyCompositionConsistencyPolicy,
     private readonly clock: Clock,
@@ -82,100 +74,23 @@ export class RecordBodyCompositionAssessmentHandler {
         sourceRequestId,
       } = command.request;
 
-      const tenant = await this.tenantDirectory.findById(tenantId);
-
-      if (!tenant) {
-        throw new TenantNotFoundForBodyCompositionError(tenantId);
-      }
-
-      if (tenant.status !== 'ACTIVE') {
-        throw new TenantInactiveForBodyCompositionError(tenantId);
-      }
-
-      const anamnesis = await this.anamnesisDirectory.findByTenantAndId(
-        tenantId,
-        anamnesisId,
-      );
-
-      if (!anamnesis) {
-        throw new AnamnesisNotFoundForBodyCompositionError(tenantId, anamnesisId);
-      }
-
-      if (anamnesis.status !== 'DRAFT') {
-        throw new AnamnesisNotDraftForBodyCompositionError(tenantId, anamnesisId);
-      }
-
-      if (anamnesis.clinicalEncounterId !== clinicalEncounterId) {
-        throw new AnamnesisClinicalEncounterMismatchForBodyCompositionError(
+      const context = await buildClinicalRecordContext({
+        tenantDirectory: this.tenantDirectory,
+        anamnesisDirectory: this.anamnesisDirectory,
+        clinicalEncounterDirectory: this.clinicalEncounterDirectory,
+        patientClinicalDirectory: this.patientClinicalDirectory,
+        nutritionistDirectory: this.nutritionistDirectory,
+        clock: this.clock,
+        request: {
           tenantId,
           anamnesisId,
           clinicalEncounterId,
-        );
-      }
-
-      if (anamnesis.patientId !== patientId) {
-        throw new AnamnesisPatientMismatchForBodyCompositionError(
-          tenantId,
-          anamnesisId,
           patientId,
-        );
-      }
-
-      if (anamnesis.nutritionistId !== nutritionistId) {
-        throw new AnamnesisNutritionistMismatchForBodyCompositionError(
-          tenantId,
-          anamnesisId,
           nutritionistId,
-        );
-      }
-
-      const encounter = await this.clinicalEncounterDirectory.findByTenantAndId(
-        tenantId,
-        clinicalEncounterId,
-      );
-
-      if (!encounter) {
-        throw new ClinicalEncounterNotFoundForBodyCompositionError(
-          tenantId,
-          clinicalEncounterId,
-        );
-      }
-
-      if (encounter.status !== 'OPEN') {
-        throw new ClinicalEncounterNotOpenForBodyCompositionError(
-          tenantId,
-          clinicalEncounterId,
-        );
-      }
-
-      if (encounter.patientId !== patientId) {
-        throw new AnamnesisPatientMismatchForBodyCompositionError(
-          tenantId,
-          anamnesisId,
-          patientId,
-        );
-      }
-
-      if (encounter.nutritionistId !== nutritionistId) {
-        throw new AnamnesisNutritionistMismatchForBodyCompositionError(
-          tenantId,
-          anamnesisId,
-          nutritionistId,
-        );
-      }
-
-      const patient = await this.patientClinicalDirectory.findByTenantAndId(
-        tenantId,
-        patientId,
-      );
-
-      if (!patient) {
-        throw new PatientNotFoundForBodyCompositionError(tenantId, patientId);
-      }
-
-      if (patient.status !== 'ACTIVE') {
-        throw new PatientInactiveForBodyCompositionError(tenantId, patientId);
-      }
+          measuredAt,
+        },
+        errors: this.clinicalRecordContextErrors,
+      });
 
       let linkedAnthropometricWeightKg: string | null = null;
       let resolvedAnthropometricAssessmentId: string | null = null;
@@ -239,15 +154,6 @@ export class RecordBodyCompositionAssessmentHandler {
         }
       }
 
-      const resolvedMeasuredAt = resolveBodyCompositionMeasuredAt(measuredAt, this.clock);
-      validateBodyCompositionMeasuredAt(
-        resolvedMeasuredAt,
-        this.clock,
-        patient.birthDate,
-        tenantId,
-        patientId,
-      );
-
       const bodyFat = BodyFatPercentage.create(bodyFatPercentage);
       const leanMass = LeanMass.createOptional(leanMassKg);
       const fatMass = FatMass.createOptional(fatMassKg);
@@ -292,7 +198,7 @@ export class RecordBodyCompositionAssessmentHandler {
           notes: bodyCompositionNotes,
           measurementSource: resolvedMeasurementSource,
           sourceRequestId: resolvedSourceRequestId,
-          measuredAt: resolvedMeasuredAt,
+          measuredAt: context.measuredAt,
         },
         createdAt,
       );

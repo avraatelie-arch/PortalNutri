@@ -2,6 +2,14 @@ import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, it } from 'node:test';
 import { PrismaClient } from '@prisma/client';
 import { requireDatabaseUrl } from '../../../../config/test-env.js';
+import {
+  createClinicalIntegrationEncounterHandlers,
+  resetClinicalIntegrationDatabase,
+  seedClinicalIntegrationBase,
+  seedClinicalIntegrationDraftAnamnesisContext,
+  type ClinicalIntegrationDraftAnamnesisContext,
+  type ClinicalIntegrationFixtureSeed,
+} from '../../../../test-support/clinical-integration-fixture.js';
 import { FixedClock } from '../../../../test-support/fixed-clock.js';
 import { noopEventDispatcher } from '../../../../test-support/noop-event-dispatcher.js';
 import { RecordBodyCompositionAssessmentCommand } from '../../application/record-body-composition-assessment/record-body-composition-assessment.command.js';
@@ -14,33 +22,14 @@ import { FindBodyCompositionAssessmentsByPatientQuery } from '../../application/
 import { FindBodyCompositionAssessmentsByPatientHandler } from '../../application/find-body-composition-assessments-by-patient/find-body-composition-assessments-by-patient.handler.js';
 import { RecordAnthropometricAssessmentCommand } from '../../application/record-anthropometric-assessment/record-anthropometric-assessment.command.js';
 import { RecordAnthropometricAssessmentHandler } from '../../application/record-anthropometric-assessment/record-anthropometric-assessment.handler.js';
-import { StartAnamnesisCommand } from '../../application/start-anamnesis/start-anamnesis.command.js';
-import { StartAnamnesisHandler } from '../../application/start-anamnesis/start-anamnesis.handler.js';
-import { StartClinicalEncounterCommand } from '../../application/start-clinical-encounter/start-clinical-encounter.command.js';
-import { StartClinicalEncounterHandler } from '../../application/start-clinical-encounter/start-clinical-encounter.handler.js';
 import { BodyCompositionConsistencyPolicy } from '../../domain/policies/body-composition-consistency-policy.js';
 import { DefaultBodyMassIndexClassificationPolicy } from '../../domain/policies/body-mass-index-classification-policy.js';
 import { BodyCompositionAssessmentId } from '../../domain/value-objects/body-composition-assessment-id.js';
 import { BodyCompositionMeasurementSourceValue } from '../../domain/value-objects/body-composition-measurement-source.js';
-import { ClinicalEncounterTypeValue } from '../../domain/value-objects/clinical-encounter-type.js';
-import { AddPersonToTenantCommand } from '../../../iam/application/add-person-to-tenant/add-person-to-tenant.command.js';
-import { AddPersonToTenantHandler } from '../../../iam/application/add-person-to-tenant/add-person-to-tenant.handler.js';
-import { CreatePersonCommand } from '../../../iam/application/create-person/create-person.command.js';
-import { CreatePersonHandler } from '../../../iam/application/create-person/create-person.handler.js';
-import { CreateTenantCommand } from '../../../iam/application/create-tenant/create-tenant.command.js';
-import { CreateTenantHandler } from '../../../iam/application/create-tenant/create-tenant.handler.js';
-import { DocumentType } from '../../../iam/domain/value-objects/document.js';
 import { PrismaMembershipRepository } from '../../../iam/infrastructure/repositories/prisma-membership.repository.js';
 import { PrismaPersonRepository } from '../../../iam/infrastructure/repositories/prisma-person.repository.js';
 import { PrismaTenantRepository } from '../../../iam/infrastructure/repositories/prisma-tenant.repository.js';
-import { CreateNutritionistCommand } from '../../../nutrition/application/create-nutritionist/create-nutritionist.command.js';
-import { CreateNutritionistHandler } from '../../../nutrition/application/create-nutritionist/create-nutritionist.handler.js';
 import { PrismaNutritionistRepository } from '../../../nutrition/infrastructure/repositories/prisma-nutritionist.repository.js';
-import { AssignNutritionistToPatientCommand } from '../../../patient/application/assign-nutritionist-to-patient/assign-nutritionist-to-patient.command.js';
-import { AssignNutritionistToPatientHandler } from '../../../patient/application/assign-nutritionist-to-patient/assign-nutritionist-to-patient.handler.js';
-import { CreatePatientCommand } from '../../../patient/application/create-patient/create-patient.command.js';
-import { CreatePatientHandler } from '../../../patient/application/create-patient/create-patient.handler.js';
-import { PatientNutritionistAssignmentRoleValue } from '../../../patient/domain/value-objects/patient-nutritionist-assignment-role.js';
 import { PrismaNutritionistDirectoryAdapter } from '../../../patient/infrastructure/adapters/prisma-nutritionist-directory.adapter.js';
 import { PrismaPatientRepository } from '../../../patient/infrastructure/repositories/prisma-patient.repository.js';
 import { PrismaPatientNutritionistAssignmentRepository } from '../../../patient/infrastructure/repositories/prisma-patient-nutritionist-assignment.repository.js';
@@ -88,107 +77,47 @@ const anthropometricAssessmentDirectory =
 const clock = new FixedClock(NOW);
 const laterClock = new FixedClock(LATER);
 
-async function resetDatabase() {
-  await prisma.bodyCompositionAssessment.deleteMany();
-  await prisma.anthropometricAssessment.deleteMany();
-  await prisma.anamnesis.deleteMany();
-  await prisma.clinicalEncounter.deleteMany();
-  await prisma.appointment.deleteMany();
-  await prisma.patientNutritionistAssignment.deleteMany();
-  await prisma.patient.deleteMany();
-  await prisma.nutritionist.deleteMany();
-  await prisma.permissionAssignment.deleteMany();
-  await prisma.permission.deleteMany();
-  await prisma.roleAssignment.deleteMany();
-  await prisma.role.deleteMany();
-  await prisma.membership.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.credential.deleteMany();
-  await prisma.person.deleteMany();
-  await prisma.tenant.deleteMany();
-}
+const fixtureRepositories = {
+  prisma,
+  tenantRepository,
+  personRepository,
+  membershipRepository,
+  nutritionistRepository,
+  patientRepository,
+  assignmentRepository,
+  encounterRepository,
+  anamnesisRepository,
+};
+
+const fixtureDirectories = {
+  patientNutritionistDirectory,
+  clinicalTenantDirectory,
+  clinicalPatientDirectory,
+  clinicalNutritionistDirectory,
+  clinicalAppointmentDirectory,
+  clinicalEncounterDirectory,
+  anamnesisDirectory,
+};
+
+const encounterHandlers = createClinicalIntegrationEncounterHandlers(
+  fixtureRepositories,
+  fixtureDirectories,
+  clock,
+  noopEventDispatcher,
+);
 
 async function createFixture(options?: { patientBirthDate?: string; slug?: string }) {
-  const person = await new CreatePersonHandler(
-    personRepository,
+  return seedClinicalIntegrationBase(
+    fixtureRepositories,
+    fixtureDirectories,
     noopEventDispatcher,
-  ).execute(
-    new CreatePersonCommand({
-      fullName: 'Ana Nutricionista',
-      email: `ana.bodycomp.${Date.now()}@example.com`,
-      documentType: DocumentType.PASSPORT,
-      document: `BC${Date.now()}`,
-      birthDate: '1988-03-20',
-    }),
+    {
+      patientBirthDate: options?.patientBirthDate,
+      slug: options?.slug,
+      emailPrefix: 'ana.bodycomp',
+      tenantName: 'Body Composition Clinic',
+    },
   );
-
-  const tenant = await new CreateTenantHandler(
-    tenantRepository,
-    noopEventDispatcher,
-  ).execute(
-    new CreateTenantCommand({
-      name: 'Body Composition Clinic',
-      slug: options?.slug ?? `bodycomp-clinic-${Date.now()}`,
-    }),
-  );
-
-  await new AddPersonToTenantHandler(
-    membershipRepository,
-    personRepository,
-    tenantRepository,
-    noopEventDispatcher,
-  ).execute(
-    new AddPersonToTenantCommand({
-      personId: person.id,
-      tenantId: tenant.id,
-    }),
-  );
-
-  const nutritionist = await new CreateNutritionistHandler(
-    nutritionistRepository,
-    personRepository,
-    tenantRepository,
-    membershipRepository,
-    noopEventDispatcher,
-  ).execute(
-    new CreateNutritionistCommand({
-      personId: person.id,
-      tenantId: tenant.id,
-      crn: `${Date.now()}`.slice(-5),
-      stateCode: 'SP',
-      specialty: 'Clinical Nutrition',
-    }),
-  );
-
-  const patient = await new CreatePatientHandler(
-    patientRepository,
-    tenantRepository,
-    noopEventDispatcher,
-  ).execute(
-    new CreatePatientCommand({
-      tenantId: tenant.id,
-      fullName: 'Carlos Paciente',
-      birthDate: options?.patientBirthDate ?? '1992-07-10',
-      gender: 'MALE',
-    }),
-  );
-
-  await new AssignNutritionistToPatientHandler(
-    assignmentRepository,
-    patientRepository,
-    patientNutritionistDirectory,
-    tenantRepository,
-    noopEventDispatcher,
-  ).execute(
-    new AssignNutritionistToPatientCommand({
-      tenantId: tenant.id,
-      patientId: patient.id,
-      nutritionistId: nutritionist.id,
-      role: PatientNutritionistAssignmentRoleValue.Primary,
-    }),
-  );
-
-  return { tenant, patient, nutritionist };
 }
 
 function createRecordHandler(customClock = clock) {
@@ -198,6 +127,7 @@ function createRecordHandler(customClock = clock) {
     anamnesisDirectory,
     clinicalEncounterDirectory,
     patientClinicalDirectory,
+    clinicalNutritionistDirectory,
     anthropometricAssessmentDirectory,
     new BodyCompositionConsistencyPolicy(),
     customClock,
@@ -212,60 +142,20 @@ function createAnthropometricRecordHandler(customClock = clock) {
     anamnesisDirectory,
     clinicalEncounterDirectory,
     patientClinicalDirectory,
+    clinicalNutritionistDirectory,
     new DefaultBodyMassIndexClassificationPolicy(),
     customClock,
     noopEventDispatcher,
   );
 }
 
-async function startEncounter(fixture: Awaited<ReturnType<typeof createFixture>>) {
-  return new StartClinicalEncounterHandler(
-    encounterRepository,
-    clinicalTenantDirectory,
-    clinicalPatientDirectory,
-    clinicalNutritionistDirectory,
-    clinicalAppointmentDirectory,
-    clock,
-    noopEventDispatcher,
-  ).execute(
-    new StartClinicalEncounterCommand({
-      tenantId: fixture.tenant.id,
-      patientId: fixture.patient.id,
-      nutritionistId: fixture.nutritionist.id,
-      type: ClinicalEncounterTypeValue.Initial,
-    }),
-  );
-}
-
-async function startAnamnesis(
-  fixture: Awaited<ReturnType<typeof createFixture>>,
-  encounterId: string,
-) {
-  return new StartAnamnesisHandler(
-    anamnesisRepository,
-    clinicalTenantDirectory,
-    clinicalEncounterDirectory,
-    clock,
-    noopEventDispatcher,
-  ).execute(
-    new StartAnamnesisCommand({
-      tenantId: fixture.tenant.id,
-      clinicalEncounterId: encounterId,
-      patientId: fixture.patient.id,
-      nutritionistId: fixture.nutritionist.id,
-    }),
-  );
-}
-
-async function createClinicalContext(fixture: Awaited<ReturnType<typeof createFixture>>) {
-  const encounter = await startEncounter(fixture);
-  const anamnesis = await startAnamnesis(fixture, encounter.id);
-  return { encounter, anamnesis };
+async function createClinicalContext(fixture: ClinicalIntegrationFixtureSeed) {
+  return seedClinicalIntegrationDraftAnamnesisContext(fixture, encounterHandlers);
 }
 
 function recordCommand(
-  fixture: Awaited<ReturnType<typeof createFixture>>,
-  context: Awaited<ReturnType<typeof createClinicalContext>>,
+  fixture: ClinicalIntegrationFixtureSeed,
+  context: ClinicalIntegrationDraftAnamnesisContext,
   overrides?: Partial<RecordBodyCompositionAssessmentCommand['request']>,
 ) {
   return new RecordBodyCompositionAssessmentCommand({
@@ -286,15 +176,15 @@ function recordCommand(
 
 describe('PrismaBodyCompositionAssessmentRepository (integration)', () => {
   before(async () => {
-    await resetDatabase();
+    await resetClinicalIntegrationDatabase(prisma, { includeAssessments: true });
   });
 
   beforeEach(async () => {
-    await resetDatabase();
+    await resetClinicalIntegrationDatabase(prisma, { includeAssessments: true });
   });
 
   after(async () => {
-    await resetDatabase();
+    await resetClinicalIntegrationDatabase(prisma, { includeAssessments: true });
     await prisma.$disconnect();
   });
 

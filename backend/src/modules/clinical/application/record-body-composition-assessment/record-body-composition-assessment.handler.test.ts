@@ -16,6 +16,7 @@ import { ClinicalSourceRequestId } from '../../domain/value-objects/clinical-sou
 import { InMemoryAnamnesisDirectory } from '../../infrastructure/adapters/in-memory-anamnesis-directory.js';
 import { InMemoryAnthropometricAssessmentDirectory } from '../../infrastructure/adapters/in-memory-anthropometric-assessment-directory.js';
 import { InMemoryClinicalEncounterDirectory } from '../../infrastructure/adapters/in-memory-clinical-encounter-directory.js';
+import { InMemoryNutritionistDirectory } from '../../infrastructure/adapters/in-memory-nutritionist-directory.js';
 import { InMemoryPatientClinicalDirectory } from '../../infrastructure/adapters/in-memory-patient-clinical-directory.js';
 import { InMemoryTenantDirectory } from '../../infrastructure/adapters/in-memory-tenant-directory.js';
 import { InMemoryBodyCompositionAssessmentRepository } from '../../infrastructure/repositories/in-memory-body-composition-assessment.repository.js';
@@ -117,12 +118,23 @@ function seedAnthropometricDirectory(options?: {
   return anthropometricAssessmentDirectory;
 }
 
+function seedNutritionistDirectory(options?: { status?: 'ACTIVE' | 'INACTIVE' }) {
+  const nutritionistDirectory = new InMemoryNutritionistDirectory();
+  nutritionistDirectory.seed({
+    id: NUTRITIONIST_ID,
+    tenantId: TENANT_ID,
+    status: options?.status ?? 'ACTIVE',
+  });
+  return nutritionistDirectory;
+}
+
 function createHandler(deps: {
   bodyCompositionAssessmentRepository?: InMemoryBodyCompositionAssessmentRepository;
   tenantDirectory: InMemoryTenantDirectory;
   anamnesisDirectory: InMemoryAnamnesisDirectory;
   clinicalEncounterDirectory: InMemoryClinicalEncounterDirectory;
   patientClinicalDirectory: InMemoryPatientClinicalDirectory;
+  nutritionistDirectory?: InMemoryNutritionistDirectory;
   anthropometricAssessmentDirectory?: InMemoryAnthropometricAssessmentDirectory;
   clock?: FixedClock;
   eventDispatcher?: CapturingEventDispatcher;
@@ -134,8 +146,9 @@ function createHandler(deps: {
     deps.anamnesisDirectory,
     deps.clinicalEncounterDirectory,
     deps.patientClinicalDirectory,
+    deps.nutritionistDirectory ?? seedNutritionistDirectory(),
     deps.anthropometricAssessmentDirectory
-      ?? new InMemoryAnthropometricAssessmentDirectory(),
+      ?? seedAnthropometricDirectory(),
     new BodyCompositionConsistencyPolicy(),
     deps.clock ?? new FixedClock(NOW),
     deps.eventDispatcher ?? noopEventDispatcher,

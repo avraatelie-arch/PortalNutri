@@ -14,6 +14,7 @@ import { BodyMassIndexClassification } from '../../domain/value-objects/body-mas
 import { BodyWeight } from '../../domain/value-objects/body-weight.js';
 import { InMemoryAnamnesisDirectory } from '../../infrastructure/adapters/in-memory-anamnesis-directory.js';
 import { InMemoryClinicalEncounterDirectory } from '../../infrastructure/adapters/in-memory-clinical-encounter-directory.js';
+import { InMemoryNutritionistDirectory } from '../../infrastructure/adapters/in-memory-nutritionist-directory.js';
 import { InMemoryPatientClinicalDirectory } from '../../infrastructure/adapters/in-memory-patient-clinical-directory.js';
 import { InMemoryTenantDirectory } from '../../infrastructure/adapters/in-memory-tenant-directory.js';
 import { InMemoryAnthropometricAssessmentRepository } from '../../infrastructure/repositories/in-memory-anthropometric-assessment.repository.js';
@@ -97,12 +98,23 @@ function seedPatientDirectory(options?: {
   return patientClinicalDirectory;
 }
 
+function seedNutritionistDirectory(options?: { status?: 'ACTIVE' | 'INACTIVE' }) {
+  const nutritionistDirectory = new InMemoryNutritionistDirectory();
+  nutritionistDirectory.seed({
+    id: NUTRITIONIST_ID,
+    tenantId: TENANT_ID,
+    status: options?.status ?? 'ACTIVE',
+  });
+  return nutritionistDirectory;
+}
+
 function createHandler(deps: {
   anthropometricAssessmentRepository?: InMemoryAnthropometricAssessmentRepository;
   tenantDirectory: InMemoryTenantDirectory;
   anamnesisDirectory: InMemoryAnamnesisDirectory;
   clinicalEncounterDirectory: InMemoryClinicalEncounterDirectory;
   patientClinicalDirectory: InMemoryPatientClinicalDirectory;
+  nutritionistDirectory?: InMemoryNutritionistDirectory;
   clock?: FixedClock;
   eventDispatcher?: CapturingEventDispatcher;
 }) {
@@ -113,6 +125,7 @@ function createHandler(deps: {
     deps.anamnesisDirectory,
     deps.clinicalEncounterDirectory,
     deps.patientClinicalDirectory,
+    deps.nutritionistDirectory ?? seedNutritionistDirectory(),
     new DefaultBodyMassIndexClassificationPolicy(),
     deps.clock ?? new FixedClock(NOW),
     deps.eventDispatcher ?? noopEventDispatcher,
