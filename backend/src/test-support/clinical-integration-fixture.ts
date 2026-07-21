@@ -88,6 +88,21 @@ export async function resetClinicalIntegrationDatabase(
 ): Promise<void> {
   if (options?.includeAssessments) {
     try {
+      await prisma.nutritionDiagnosis.deleteMany();
+    }
+    catch (error) {
+      if (
+        !(
+          error instanceof Error
+          && 'code' in error
+          && error.code === 'P2021'
+        )
+      ) {
+        throw error;
+      }
+    }
+
+    try {
       await prisma.clinicalObjective.deleteMany();
     }
     catch (error) {

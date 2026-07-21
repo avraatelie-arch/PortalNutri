@@ -60,6 +60,14 @@ describe('Platform event runtime composition', () => {
       clinical.clinicalHandlers.createClinicalObjectiveHandler,
       undefined,
     );
+    assert.notEqual(
+      clinical.clinicalHandlers.createNutritionDiagnosisHandler,
+      undefined,
+    );
+    assert.notEqual(
+      clinical.clinicalHandlers.confirmNutritionDiagnosisHandler,
+      undefined,
+    );
   });
 
   it('does not instantiate a second Event Bus when modules use default runtime', () => {

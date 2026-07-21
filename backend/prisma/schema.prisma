@@ -182,6 +182,7 @@ model Tenant {
   anthropometricAssessments      AnthropometricAssessment[]
   bodyCompositionAssessments     BodyCompositionAssessment[]
   clinicalObjectives             ClinicalObjective[]
+  nutritionDiagnoses             NutritionDiagnosis[]
 
   @@map("tenants")
 }
@@ -235,6 +236,8 @@ model Nutritionist {
   bodyCompositionAssessments BodyCompositionAssessment[]
   clinicalObjectivesCreated     ClinicalObjective[] @relation("ClinicalObjectiveCreatedBy")
   clinicalObjectivesResponsible ClinicalObjective[] @relation("ClinicalObjectiveResponsible")
+  nutritionDiagnosesCreated     NutritionDiagnosis[] @relation("NutritionDiagnosisCreatedBy")
+  nutritionDiagnosesResponsible NutritionDiagnosis[] @relation("NutritionDiagnosisResponsible")
 
   @@unique([tenantId, crn])
   @@index([personId])
@@ -273,6 +276,7 @@ model Patient {
   anthropometricAssessments AnthropometricAssessment[]
   bodyCompositionAssessments BodyCompositionAssessment[]
   clinicalObjectives         ClinicalObjective[]
+  nutritionDiagnoses         NutritionDiagnosis[]
 
   @@index([tenantId])
   @@map("patients")
@@ -354,6 +358,7 @@ model ClinicalEncounter {
   anthropometricAssessments AnthropometricAssessment[]
   bodyCompositionAssessments BodyCompositionAssessment[]
   originClinicalObjectives ClinicalObjective[] @relation("ClinicalObjectiveOriginEncounter")
+  originNutritionDiagnoses NutritionDiagnosis[] @relation("NutritionDiagnosisOriginEncounter")
 
   @@index([tenantId])
   @@index([patientId])
@@ -396,6 +401,7 @@ model Anamnesis {
   anthropometricAssessments AnthropometricAssessment[]
   bodyCompositionAssessments BodyCompositionAssessment[]
   originClinicalObjectives ClinicalObjective[] @relation("ClinicalObjectiveOriginAnamnesis")
+  originNutritionDiagnoses NutritionDiagnosis[] @relation("NutritionDiagnosisOriginAnamnesis")
 
   @@index([tenantId])
   @@index([patientId])
@@ -581,6 +587,60 @@ model ClinicalObjective {
   @@index([tenantId, responsibleNutritionistId, status])
   @@index([tenantId, originClinicalEncounterId])
   @@map("clinical_objectives")
+}
+
+enum NutritionDiagnosisStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum NutritionProblemCategory {
+  ENERGY_BALANCE
+  MACRONUTRIENT_INADEQUACY
+  MICRONUTRIENT_DEFICIENCY
+  GLYCEMIC_DYSREGULATION
+  DYSPHAGIA
+  SARCOPENIA_RISK
+  DISORDERED_EATING_PATTERN
+  GASTROINTESTINAL
+  RENAL_NUTRITION
+  CLINICAL_CONDITION_SUPPORT
+  OTHER
+}
+
+model NutritionDiagnosis {
+  id                          String                   @id @default(uuid())
+  tenantId                    String                   @map("tenant_id")
+  patientId                   String                   @map("patient_id")
+  createdByNutritionistId     String                   @map("created_by_nutritionist_id")
+  responsibleNutritionistId   String                   @map("responsible_nutritionist_id")
+  originClinicalEncounterId   String?                  @map("origin_clinical_encounter_id")
+  originAnamnesisId           String?                  @map("origin_anamnesis_id")
+  problemCategory             NutritionProblemCategory @default(OTHER) @map("problem_category")
+  status                      NutritionDiagnosisStatus @default(DRAFT)
+  professionalInterpretation  String?                  @map("professional_interpretation") @db.Text
+  cancellationReason          String?                  @map("cancellation_reason") @db.Text
+  confirmedAt                 DateTime?                @map("confirmed_at")
+  cancelledAt                 DateTime?                @map("cancelled_at")
+  version                     Int                      @default(1)
+  createdAt                   DateTime                 @default(now()) @map("created_at")
+  updatedAt                   DateTime                 @updatedAt @map("updated_at")
+  tenant                      Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient                     Patient                  @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  createdByNutritionist       Nutritionist             @relation("NutritionDiagnosisCreatedBy", fields: [createdByNutritionistId], references: [id], onDelete: Restrict)
+  responsibleNutritionist     Nutritionist             @relation("NutritionDiagnosisResponsible", fields: [responsibleNutritionistId], references: [id], onDelete: Restrict)
+  originClinicalEncounter     ClinicalEncounter?       @relation("NutritionDiagnosisOriginEncounter", fields: [originClinicalEncounterId], references: [id], onDelete: Restrict)
+  originAnamnesis             Anamnesis?               @relation("NutritionDiagnosisOriginAnamnesis", fields: [originAnamnesisId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, patientId])
+  @@index([tenantId, patientId, status])
+  @@index([tenantId, status])
+  @@index([tenantId, responsibleNutritionistId])
+  @@index([tenantId, responsibleNutritionistId, status])
+  @@index([tenantId, originClinicalEncounterId])
+  @@map("nutrition_diagnoses")
 }
 
 enum PatientNutritionistAssignmentStatus {

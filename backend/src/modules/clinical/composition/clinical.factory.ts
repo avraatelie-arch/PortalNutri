@@ -12,6 +12,7 @@ import type { AnamnesisRepository } from '../domain/repositories/anamnesis-repos
 import type { AnthropometricAssessmentRepository } from '../domain/repositories/anthropometric-assessment-repository.js';
 import type { BodyCompositionAssessmentRepository } from '../domain/repositories/body-composition-assessment-repository.js';
 import type { ClinicalObjectiveRepository } from '../domain/repositories/clinical-objective-repository.js';
+import type { NutritionDiagnosisRepository } from '../domain/repositories/nutrition-diagnosis-repository.js';
 import type { AnamnesisCompletionPolicy } from '../domain/policies/anamnesis-completion-policy.js';
 import type { BodyMassIndexClassificationPolicy } from '../domain/policies/body-mass-index-classification-policy.js';
 import type { BodyCompositionConsistencyPolicy } from '../domain/policies/body-composition-consistency-policy.js';
@@ -45,6 +46,14 @@ import { ChangeClinicalObjectiveResponsibleNutritionistHandler } from '../applic
 import { FindClinicalObjectiveHandler } from '../application/find-clinical-objective/find-clinical-objective.handler.js';
 import { FindClinicalObjectivesByPatientHandler } from '../application/find-clinical-objectives-by-patient/find-clinical-objectives-by-patient.handler.js';
 import { FindActiveClinicalObjectivesByPatientHandler } from '../application/find-active-clinical-objectives-by-patient/find-active-clinical-objectives-by-patient.handler.js';
+import { CreateNutritionDiagnosisHandler } from '../application/create-nutrition-diagnosis/create-nutrition-diagnosis.handler.js';
+import { EditNutritionDiagnosisHandler } from '../application/edit-nutrition-diagnosis/edit-nutrition-diagnosis.handler.js';
+import { ConfirmNutritionDiagnosisHandler } from '../application/confirm-nutrition-diagnosis/confirm-nutrition-diagnosis.handler.js';
+import { CancelNutritionDiagnosisHandler } from '../application/cancel-nutrition-diagnosis/cancel-nutrition-diagnosis.handler.js';
+import { ChangeNutritionDiagnosisResponsibleNutritionistHandler } from '../application/change-nutrition-diagnosis-responsible-nutritionist/change-nutrition-diagnosis-responsible-nutritionist.handler.js';
+import { FindNutritionDiagnosisHandler } from '../application/find-nutrition-diagnosis/find-nutrition-diagnosis.handler.js';
+import { FindNutritionDiagnosesByPatientHandler } from '../application/find-nutrition-diagnoses-by-patient/find-nutrition-diagnoses-by-patient.handler.js';
+import { FindConfirmedNutritionDiagnosesByPatientHandler } from '../application/find-confirmed-nutrition-diagnoses-by-patient/find-confirmed-nutrition-diagnoses-by-patient.handler.js';
 
 export interface ClinicalFactoryDependencies {
   encounterRepository: ClinicalEncounterRepository;
@@ -52,6 +61,7 @@ export interface ClinicalFactoryDependencies {
   anthropometricAssessmentRepository: AnthropometricAssessmentRepository;
   bodyCompositionAssessmentRepository: BodyCompositionAssessmentRepository;
   clinicalObjectiveRepository: ClinicalObjectiveRepository;
+  nutritionDiagnosisRepository: NutritionDiagnosisRepository;
   anthropometricAssessmentDirectory: AnthropometricAssessmentDirectoryPort;
   tenantDirectory: TenantDirectoryPort;
   patientDirectory: PatientDirectoryPort;
@@ -97,6 +107,14 @@ export interface ClinicalHandlers {
   findClinicalObjectiveHandler: FindClinicalObjectiveHandler;
   findClinicalObjectivesByPatientHandler: FindClinicalObjectivesByPatientHandler;
   findActiveClinicalObjectivesByPatientHandler: FindActiveClinicalObjectivesByPatientHandler;
+  createNutritionDiagnosisHandler: CreateNutritionDiagnosisHandler;
+  editNutritionDiagnosisHandler: EditNutritionDiagnosisHandler;
+  confirmNutritionDiagnosisHandler: ConfirmNutritionDiagnosisHandler;
+  cancelNutritionDiagnosisHandler: CancelNutritionDiagnosisHandler;
+  changeNutritionDiagnosisResponsibleNutritionistHandler: ChangeNutritionDiagnosisResponsibleNutritionistHandler;
+  findNutritionDiagnosisHandler: FindNutritionDiagnosisHandler;
+  findNutritionDiagnosesByPatientHandler: FindNutritionDiagnosesByPatientHandler;
+  findConfirmedNutritionDiagnosesByPatientHandler: FindConfirmedNutritionDiagnosesByPatientHandler;
 }
 
 export function createClinicalHandlers(
@@ -251,6 +269,47 @@ export function createClinicalHandlers(
     findActiveClinicalObjectivesByPatientHandler:
       new FindActiveClinicalObjectivesByPatientHandler(
         deps.clinicalObjectiveRepository,
+      ),
+    createNutritionDiagnosisHandler: new CreateNutritionDiagnosisHandler(
+      deps.nutritionDiagnosisRepository,
+      deps.tenantDirectory,
+      deps.patientClinicalDirectory,
+      deps.nutritionistDirectory,
+      deps.clinicalEncounterDirectory,
+      deps.anamnesisDirectory,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    editNutritionDiagnosisHandler: new EditNutritionDiagnosisHandler(
+      deps.nutritionDiagnosisRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    confirmNutritionDiagnosisHandler: new ConfirmNutritionDiagnosisHandler(
+      deps.nutritionDiagnosisRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    cancelNutritionDiagnosisHandler: new CancelNutritionDiagnosisHandler(
+      deps.nutritionDiagnosisRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    changeNutritionDiagnosisResponsibleNutritionistHandler:
+      new ChangeNutritionDiagnosisResponsibleNutritionistHandler(
+        deps.nutritionDiagnosisRepository,
+        deps.nutritionistDirectory,
+        deps.clock,
+        deps.eventDispatcher,
+      ),
+    findNutritionDiagnosisHandler: new FindNutritionDiagnosisHandler(
+      deps.nutritionDiagnosisRepository,
+    ),
+    findNutritionDiagnosesByPatientHandler:
+      new FindNutritionDiagnosesByPatientHandler(deps.nutritionDiagnosisRepository),
+    findConfirmedNutritionDiagnosesByPatientHandler:
+      new FindConfirmedNutritionDiagnosesByPatientHandler(
+        deps.nutritionDiagnosisRepository,
       ),
   };
 }
