@@ -181,6 +181,7 @@ model Tenant {
   anamneses                      Anamnesis[]
   anthropometricAssessments      AnthropometricAssessment[]
   bodyCompositionAssessments     BodyCompositionAssessment[]
+  clinicalObjectives             ClinicalObjective[]
 
   @@map("tenants")
 }
@@ -232,6 +233,8 @@ model Nutritionist {
   anamneses                 Anamnesis[]
   anthropometricAssessments AnthropometricAssessment[]
   bodyCompositionAssessments BodyCompositionAssessment[]
+  clinicalObjectivesCreated     ClinicalObjective[] @relation("ClinicalObjectiveCreatedBy")
+  clinicalObjectivesResponsible ClinicalObjective[] @relation("ClinicalObjectiveResponsible")
 
   @@unique([tenantId, crn])
   @@index([personId])
@@ -269,6 +272,7 @@ model Patient {
   anamneses                 Anamnesis[]
   anthropometricAssessments AnthropometricAssessment[]
   bodyCompositionAssessments BodyCompositionAssessment[]
+  clinicalObjectives         ClinicalObjective[]
 
   @@index([tenantId])
   @@map("patients")
@@ -349,6 +353,7 @@ model ClinicalEncounter {
   anamnesis                 Anamnesis?
   anthropometricAssessments AnthropometricAssessment[]
   bodyCompositionAssessments BodyCompositionAssessment[]
+  originClinicalObjectives ClinicalObjective[] @relation("ClinicalObjectiveOriginEncounter")
 
   @@index([tenantId])
   @@index([patientId])
@@ -390,6 +395,7 @@ model Anamnesis {
   nutritionist              Nutritionist                @relation(fields: [nutritionistId], references: [id], onDelete: Restrict)
   anthropometricAssessments AnthropometricAssessment[]
   bodyCompositionAssessments BodyCompositionAssessment[]
+  originClinicalObjectives ClinicalObjective[] @relation("ClinicalObjectiveOriginAnamnesis")
 
   @@index([tenantId])
   @@index([patientId])
@@ -503,6 +509,78 @@ model BodyCompositionAssessment {
   @@index([tenantId, patientId, measuredAt])
   @@index([tenantId, clinicalEncounterId])
   @@map("body_composition_assessments")
+}
+
+enum ClinicalObjectiveStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum ClinicalObjectiveType {
+  WEIGHT_LOSS
+  WEIGHT_GAIN
+  MUSCLE_GAIN
+  BODY_FAT_REDUCTION
+  GLYCEMIC_CONTROL
+  LIPID_CONTROL
+  BLOOD_PRESSURE_CONTROL
+  GASTROINTESTINAL_SYMPTOM_CONTROL
+  SPORTS_PERFORMANCE
+  PREGNANCY_SUPPORT
+  POSTPARTUM_RECOVERY
+  EATING_BEHAVIOR
+  NUTRITION_EDUCATION
+  CLINICAL_CONDITION_SUPPORT
+  OTHER
+}
+
+enum ClinicalObjectivePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model ClinicalObjective {
+  id                          String                    @id @default(uuid())
+  tenantId                    String                    @map("tenant_id")
+  patientId                   String                    @map("patient_id")
+  createdByNutritionistId     String                    @map("created_by_nutritionist_id")
+  responsibleNutritionistId   String                    @map("responsible_nutritionist_id")
+  originClinicalEncounterId   String?                   @map("origin_clinical_encounter_id")
+  originAnamnesisId           String?                   @map("origin_anamnesis_id")
+  type                        ClinicalObjectiveType
+  status                      ClinicalObjectiveStatus   @default(DRAFT)
+  priority                    ClinicalObjectivePriority @default(MEDIUM)
+  title                       String                    @default("")
+  clinicalRationale           String?                   @map("clinical_rationale") @db.Text
+  successCriteria             String?                   @map("success_criteria") @db.Text
+  targetDate                  DateTime?                 @map("target_date")
+  activatedAt                 DateTime?                 @map("activated_at")
+  pausedAt                    DateTime?                 @map("paused_at")
+  completedAt                 DateTime?                 @map("completed_at")
+  cancelledAt                 DateTime?                 @map("cancelled_at")
+  version                     Int                       @default(1)
+  createdAt                   DateTime                  @default(now()) @map("created_at")
+  updatedAt                   DateTime                  @updatedAt @map("updated_at")
+  tenant                      Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient                     Patient                   @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  createdByNutritionist       Nutritionist              @relation("ClinicalObjectiveCreatedBy", fields: [createdByNutritionistId], references: [id], onDelete: Restrict)
+  responsibleNutritionist     Nutritionist              @relation("ClinicalObjectiveResponsible", fields: [responsibleNutritionistId], references: [id], onDelete: Restrict)
+  originClinicalEncounter     ClinicalEncounter?        @relation("ClinicalObjectiveOriginEncounter", fields: [originClinicalEncounterId], references: [id], onDelete: Restrict)
+  originAnamnesis             Anamnesis?                @relation("ClinicalObjectiveOriginAnamnesis", fields: [originAnamnesisId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, patientId])
+  @@index([tenantId, patientId, status])
+  @@index([tenantId, status])
+  @@index([tenantId, responsibleNutritionistId])
+  @@index([tenantId, responsibleNutritionistId, status])
+  @@index([tenantId, originClinicalEncounterId])
+  @@map("clinical_objectives")
 }
 
 enum PatientNutritionistAssignmentStatus {

@@ -87,6 +87,21 @@ export async function resetClinicalIntegrationDatabase(
   options?: { includeAssessments?: boolean },
 ): Promise<void> {
   if (options?.includeAssessments) {
+    try {
+      await prisma.clinicalObjective.deleteMany();
+    }
+    catch (error) {
+      if (
+        !(
+          error instanceof Error
+          && 'code' in error
+          && error.code === 'P2021'
+        )
+      ) {
+        throw error;
+      }
+    }
+
     await prisma.bodyCompositionAssessment.deleteMany();
     await prisma.anthropometricAssessment.deleteMany();
   }

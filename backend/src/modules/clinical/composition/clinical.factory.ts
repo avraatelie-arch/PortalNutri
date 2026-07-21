@@ -11,6 +11,7 @@ import type { ClinicalEncounterRepository } from '../domain/repositories/clinica
 import type { AnamnesisRepository } from '../domain/repositories/anamnesis-repository.js';
 import type { AnthropometricAssessmentRepository } from '../domain/repositories/anthropometric-assessment-repository.js';
 import type { BodyCompositionAssessmentRepository } from '../domain/repositories/body-composition-assessment-repository.js';
+import type { ClinicalObjectiveRepository } from '../domain/repositories/clinical-objective-repository.js';
 import type { AnamnesisCompletionPolicy } from '../domain/policies/anamnesis-completion-policy.js';
 import type { BodyMassIndexClassificationPolicy } from '../domain/policies/body-mass-index-classification-policy.js';
 import type { BodyCompositionConsistencyPolicy } from '../domain/policies/body-composition-consistency-policy.js';
@@ -33,12 +34,24 @@ import { RecordBodyCompositionAssessmentHandler } from '../application/record-bo
 import { FindBodyCompositionAssessmentHandler } from '../application/find-body-composition-assessment/find-body-composition-assessment.handler.js';
 import { FindBodyCompositionAssessmentsByAnamnesisHandler } from '../application/find-body-composition-assessments-by-anamnesis/find-body-composition-assessments-by-anamnesis.handler.js';
 import { FindBodyCompositionAssessmentsByPatientHandler } from '../application/find-body-composition-assessments-by-patient/find-body-composition-assessments-by-patient.handler.js';
+import { CreateClinicalObjectiveHandler } from '../application/create-clinical-objective/create-clinical-objective.handler.js';
+import { ActivateClinicalObjectiveHandler } from '../application/activate-clinical-objective/activate-clinical-objective.handler.js';
+import { PauseClinicalObjectiveHandler } from '../application/pause-clinical-objective/pause-clinical-objective.handler.js';
+import { ResumeClinicalObjectiveHandler } from '../application/resume-clinical-objective/resume-clinical-objective.handler.js';
+import { CompleteClinicalObjectiveHandler } from '../application/complete-clinical-objective/complete-clinical-objective.handler.js';
+import { CancelClinicalObjectiveHandler } from '../application/cancel-clinical-objective/cancel-clinical-objective.handler.js';
+import { EditClinicalObjectiveHandler } from '../application/edit-clinical-objective/edit-clinical-objective.handler.js';
+import { ChangeClinicalObjectiveResponsibleNutritionistHandler } from '../application/change-clinical-objective-responsible-nutritionist/change-clinical-objective-responsible-nutritionist.handler.js';
+import { FindClinicalObjectiveHandler } from '../application/find-clinical-objective/find-clinical-objective.handler.js';
+import { FindClinicalObjectivesByPatientHandler } from '../application/find-clinical-objectives-by-patient/find-clinical-objectives-by-patient.handler.js';
+import { FindActiveClinicalObjectivesByPatientHandler } from '../application/find-active-clinical-objectives-by-patient/find-active-clinical-objectives-by-patient.handler.js';
 
 export interface ClinicalFactoryDependencies {
   encounterRepository: ClinicalEncounterRepository;
   anamnesisRepository: AnamnesisRepository;
   anthropometricAssessmentRepository: AnthropometricAssessmentRepository;
   bodyCompositionAssessmentRepository: BodyCompositionAssessmentRepository;
+  clinicalObjectiveRepository: ClinicalObjectiveRepository;
   anthropometricAssessmentDirectory: AnthropometricAssessmentDirectoryPort;
   tenantDirectory: TenantDirectoryPort;
   patientDirectory: PatientDirectoryPort;
@@ -73,6 +86,17 @@ export interface ClinicalHandlers {
   findBodyCompositionAssessmentHandler: FindBodyCompositionAssessmentHandler;
   findBodyCompositionAssessmentsByAnamnesisHandler: FindBodyCompositionAssessmentsByAnamnesisHandler;
   findBodyCompositionAssessmentsByPatientHandler: FindBodyCompositionAssessmentsByPatientHandler;
+  createClinicalObjectiveHandler: CreateClinicalObjectiveHandler;
+  activateClinicalObjectiveHandler: ActivateClinicalObjectiveHandler;
+  pauseClinicalObjectiveHandler: PauseClinicalObjectiveHandler;
+  resumeClinicalObjectiveHandler: ResumeClinicalObjectiveHandler;
+  completeClinicalObjectiveHandler: CompleteClinicalObjectiveHandler;
+  cancelClinicalObjectiveHandler: CancelClinicalObjectiveHandler;
+  editClinicalObjectiveHandler: EditClinicalObjectiveHandler;
+  changeClinicalObjectiveResponsibleNutritionistHandler: ChangeClinicalObjectiveResponsibleNutritionistHandler;
+  findClinicalObjectiveHandler: FindClinicalObjectiveHandler;
+  findClinicalObjectivesByPatientHandler: FindClinicalObjectivesByPatientHandler;
+  findActiveClinicalObjectivesByPatientHandler: FindActiveClinicalObjectivesByPatientHandler;
 }
 
 export function createClinicalHandlers(
@@ -171,6 +195,62 @@ export function createClinicalHandlers(
     findBodyCompositionAssessmentsByPatientHandler:
       new FindBodyCompositionAssessmentsByPatientHandler(
         deps.bodyCompositionAssessmentRepository,
+      ),
+    createClinicalObjectiveHandler: new CreateClinicalObjectiveHandler(
+      deps.clinicalObjectiveRepository,
+      deps.tenantDirectory,
+      deps.patientClinicalDirectory,
+      deps.nutritionistDirectory,
+      deps.clinicalEncounterDirectory,
+      deps.anamnesisDirectory,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    activateClinicalObjectiveHandler: new ActivateClinicalObjectiveHandler(
+      deps.clinicalObjectiveRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    pauseClinicalObjectiveHandler: new PauseClinicalObjectiveHandler(
+      deps.clinicalObjectiveRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    resumeClinicalObjectiveHandler: new ResumeClinicalObjectiveHandler(
+      deps.clinicalObjectiveRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    completeClinicalObjectiveHandler: new CompleteClinicalObjectiveHandler(
+      deps.clinicalObjectiveRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    cancelClinicalObjectiveHandler: new CancelClinicalObjectiveHandler(
+      deps.clinicalObjectiveRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    editClinicalObjectiveHandler: new EditClinicalObjectiveHandler(
+      deps.clinicalObjectiveRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    changeClinicalObjectiveResponsibleNutritionistHandler:
+      new ChangeClinicalObjectiveResponsibleNutritionistHandler(
+        deps.clinicalObjectiveRepository,
+        deps.nutritionistDirectory,
+        deps.clock,
+        deps.eventDispatcher,
+      ),
+    findClinicalObjectiveHandler: new FindClinicalObjectiveHandler(
+      deps.clinicalObjectiveRepository,
+    ),
+    findClinicalObjectivesByPatientHandler:
+      new FindClinicalObjectivesByPatientHandler(deps.clinicalObjectiveRepository),
+    findActiveClinicalObjectivesByPatientHandler:
+      new FindActiveClinicalObjectivesByPatientHandler(
+        deps.clinicalObjectiveRepository,
       ),
   };
 }

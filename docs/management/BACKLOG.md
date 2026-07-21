@@ -2,7 +2,7 @@
 
 Backlog de features do PortalNutri Platform. Atualizado conforme evolução do desenvolvimento.
 
-**Última atualização:** 2026-07-10
+**Última atualização:** 2026-07-21
 
 ---
 
@@ -67,3 +67,12 @@ Backlog de features do PortalNutri Platform. Atualizado conforme evolução do d
 | Communication | Notificações transacionais | P3 | 📋 Proposto | Event Bus, IAM |
 | Infraestrutura | Mensageria (broker) | P2 | 📋 Proposto | Event Bus |
 | Infraestrutura | Ambiente de staging | P2 | 📋 Proposto | CI/CD |
+
+---
+
+## Itens técnicos (BACKLOG-xxx)
+
+| ID | Item | Prioridade | Status | Contexto |
+|----|------|------------|--------|----------|
+| BACKLOG-001 | Implement optimistic concurrency using version-based updates in Prisma repositories | P1 | ⏳ Backlog | Identificado na revisão de FEATURE-034; `ClinicalObjective` e demais aggregates com campo `version` fazem upsert sem guard `WHERE version = expected`, permitindo lost updates em concorrência |
+| BACKLOG-002 | Validate patient ↔ responsible nutritionist assignment when the care-team model is introduced | P2 | ⏳ Backlog | Identificado na revisão de FEATURE-034; `ChangeClinicalObjectiveResponsibleNutritionist` valida nutritionist ativo no tenant, mas não exige vínculo patient–nutritionist até o modelo de care team estar definido |
