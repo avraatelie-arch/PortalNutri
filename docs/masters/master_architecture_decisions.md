@@ -320,6 +320,142 @@ Em caso de divergência entre documentação e implementação, a documentação
 
 ---
 
+# ADR-0016
+
+## Registros Clínicos Vinculados à Sessão vs Escopo do Paciente
+
+### Contexto
+
+O módulo Clinical contém aggregates com diferentes graus de acoplamento temporal e de proveniência.
+
+### Decisão
+
+O módulo Clinical adota dois clusters arquiteturais complementares:
+
+**Registros vinculados à sessão (session-bound):**
+
+- `ClinicalEncounter` — unidade temporal de atendimento (OPEN → FINISHED/CANCELLED)
+- `Anamnesis` — 1:1 com encounter; coleta estruturada durante a sessão
+- `AnthropometricAssessment` e `BodyCompositionAssessment` — registros imutáveis capturados durante anamnese DRAFT + encounter OPEN
+
+**Registros de escopo do paciente (patient-scoped):**
+
+- `ClinicalObjective`, `NutritionDiagnosis`, `MealPlan` — aggregates independentes, indexados por tenant + patient
+- Referências de origem (`originClinicalEncounterId`, `originAnamnesisId`) são opcionais e servem apenas como proveniência; não criam acoplamento de lifecycle
+
+### Justificativa
+
+- Separa o fluxo de coleta clínica momentânea da evolução longitudinal do paciente
+- Permite criar objetivos, diagnósticos e planos fora de uma sessão ativa
+- Mantém integridade referencial sem impor FKs rígidas entre lifecycles distintos
+
+### Status
+
+Aprovado — Implementado (Consolidation Sprint, FEATURE-037 prep)
+
+---
+
+# ADR-0017
+
+## Política de Mutação de Registros Publicados no Módulo Clinical
+
+### Contexto
+
+Aggregates patient-scoped possuem estados publicados com regras de edição distintas, identificadas na revisão de consolidação arquitetural.
+
+### Decisão
+
+A política de mutação após publicação é **intencionalmente distinta por aggregate**:
+
+| Aggregate | Estado publicado | Edição de conteúdo | Evolução clínica |
+|-----------|------------------|--------------------|------------------|
+| `ClinicalObjective` | ACTIVE (e PAUSED) | **Permitida** — objetivos evoluem durante tratamento | Pause/resume/complete/cancel |
+| `NutritionDiagnosis` | CONFIRMED | **Proibida** — registro imutável após confirmação | Nova diagnosis; cancel excepcional |
+| `MealPlan` | ACTIVE | **Proibida** — plano imutável após ativação | Novo plano; cancel excepcional |
+
+Esta divergência **não é inconsistência acidental**. Reflete semânticas de domínio distintas:
+
+- Objetivos clínicos são metas evolutivas que podem ser refinadas
+- Diagnósticos nutricionais confirmados são decisões clínicas registradas
+- Planos alimentares ativos são prescrições entregues ao paciente
+
+### Justificativa
+
+- Preserva rastreabilidade clínica onde imutabilidade é requisito legal/profissional
+- Permite flexibilidade terapêutica onde o domínio exige ajuste contínuo
+- Evita unificação artificial de regras incompatíveis
+
+### Status
+
+Aprovado — Implementado (Consolidation Sprint, FEATURE-037 prep)
+
+---
+
+# ADR-0018
+
+## Vocabulário de Lifecycle Específico por Aggregate Clinical
+
+### Contexto
+
+O módulo Clinical utiliza verbos e estados distintos para marcar a publicação ou conclusão de registros clínicos.
+
+### Decisão
+
+Os verbos de lifecycle são **específicos de domínio** e **não devem ser artificialmente unificados**:
+
+| Verbo | Aggregates | Significado clínico |
+|-------|------------|---------------------|
+| **Activate** | ClinicalObjective, MealPlan | Torna o registro operacional/visível no tratamento |
+| **Confirm** | NutritionDiagnosis | Registra decisão profissional formal |
+| **Complete** | Anamnesis, ClinicalObjective | Encerra coleta ou atinge meta |
+| **Finish** | ClinicalEncounter | Encerra sessão de atendimento |
+
+Estados correspondentes (`ACTIVE`, `CONFIRMED`, `COMPLETED`, `FINISHED`) mantêm significado próprio e não serão normalizados para um estado genérico `PUBLISHED`.
+
+### Justificativa
+
+- Respeita a linguagem ubíqua de cada conceito clínico
+- Evita perda semântica em normalizações prematuras
+- Facilita comunicação com profissionais de saúde e documentação regulatória
+
+### Status
+
+Aprovado — Implementado (Consolidation Sprint, FEATURE-037 prep)
+
+---
+
+# ADR-0019
+
+## ClinicalChart como Read Model de Consulta
+
+### Contexto
+
+O domínio Care define Prontuário como conceito proprietário, mas o módulo Clinical implementa múltiplos aggregates independentes sem um aggregate de escrita unificado.
+
+### Decisão
+
+`ClinicalChart` (Prontuário na camada de consulta) será implementado como **Read Model query-side**, não como Aggregate Root de escrita.
+
+Responsabilidades:
+
+- Compor timeline clínica do paciente a partir de queries existentes
+- Agregar dados de session-bound e patient-scoped records para UI, relatórios e contexto de IA
+- **Não** possuir commands, lifecycle próprio ou persistência independente
+
+Aggregates de escrita permanecem independentes. ClinicalChart consome seus query handlers ou projeções futuras.
+
+### Justificativa
+
+- Evita aggregate monolítico que violaria bounded contexts internos
+- Alinha com CQRS — escrita distribuída, leitura composta
+- Prepara integração AI (ADR-0010) via casos de uso de consulta
+
+### Status
+
+Aprovado — Proposto (implementação deferida; BACKLOG-007)
+
+---
+
 # Governança
 
 Toda nova decisão arquitetural deverá receber um novo ADR.
