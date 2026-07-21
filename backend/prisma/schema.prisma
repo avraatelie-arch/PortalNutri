@@ -183,6 +183,7 @@ model Tenant {
   bodyCompositionAssessments     BodyCompositionAssessment[]
   clinicalObjectives             ClinicalObjective[]
   nutritionDiagnoses             NutritionDiagnosis[]
+  mealPlans                      MealPlan[]
 
   @@map("tenants")
 }
@@ -238,6 +239,8 @@ model Nutritionist {
   clinicalObjectivesResponsible ClinicalObjective[] @relation("ClinicalObjectiveResponsible")
   nutritionDiagnosesCreated     NutritionDiagnosis[] @relation("NutritionDiagnosisCreatedBy")
   nutritionDiagnosesResponsible NutritionDiagnosis[] @relation("NutritionDiagnosisResponsible")
+  mealPlansCreated              MealPlan[]           @relation("MealPlanCreatedBy")
+  mealPlansResponsible          MealPlan[]           @relation("MealPlanResponsible")
 
   @@unique([tenantId, crn])
   @@index([personId])
@@ -277,6 +280,7 @@ model Patient {
   bodyCompositionAssessments BodyCompositionAssessment[]
   clinicalObjectives         ClinicalObjective[]
   nutritionDiagnoses         NutritionDiagnosis[]
+  mealPlans                  MealPlan[]
 
   @@index([tenantId])
   @@map("patients")
@@ -359,6 +363,7 @@ model ClinicalEncounter {
   bodyCompositionAssessments BodyCompositionAssessment[]
   originClinicalObjectives ClinicalObjective[] @relation("ClinicalObjectiveOriginEncounter")
   originNutritionDiagnoses NutritionDiagnosis[] @relation("NutritionDiagnosisOriginEncounter")
+  originMealPlans          MealPlan[]           @relation("MealPlanOriginEncounter")
 
   @@index([tenantId])
   @@index([patientId])
@@ -402,6 +407,7 @@ model Anamnesis {
   bodyCompositionAssessments BodyCompositionAssessment[]
   originClinicalObjectives ClinicalObjective[] @relation("ClinicalObjectiveOriginAnamnesis")
   originNutritionDiagnoses NutritionDiagnosis[] @relation("NutritionDiagnosisOriginAnamnesis")
+  originMealPlans          MealPlan[]           @relation("MealPlanOriginAnamnesis")
 
   @@index([tenantId])
   @@index([patientId])
@@ -641,6 +647,76 @@ model NutritionDiagnosis {
   @@index([tenantId, responsibleNutritionistId, status])
   @@index([tenantId, originClinicalEncounterId])
   @@map("nutrition_diagnoses")
+}
+
+enum MealPlanStatus {
+  DRAFT
+  ACTIVE
+  CANCELLED
+}
+
+enum MealPlanType {
+  INITIAL
+  MAINTENANCE
+  WEEKDAY
+  WEEKEND
+  TRAVEL
+  PHASE
+  OTHER
+}
+
+model MealPlan {
+  id                        String          @id @default(uuid())
+  tenantId                  String          @map("tenant_id")
+  patientId                 String          @map("patient_id")
+  createdByNutritionistId   String          @map("created_by_nutritionist_id")
+  responsibleNutritionistId String          @map("responsible_nutritionist_id")
+  originClinicalEncounterId String?         @map("origin_clinical_encounter_id")
+  originAnamnesisId         String?         @map("origin_anamnesis_id")
+  planType                  MealPlanType?   @map("plan_type")
+  status                    MealPlanStatus  @default(DRAFT)
+  title                     String          @default("")
+  therapeuticStrategy       String?         @map("therapeutic_strategy") @db.Text
+  generalGuidelines         String?         @map("general_guidelines") @db.Text
+  clinicalNotes             String?         @map("clinical_notes") @db.Text
+  validFrom                 DateTime?       @map("valid_from")
+  validUntil                DateTime?       @map("valid_until")
+  cancellationReason        String?         @map("cancellation_reason") @db.Text
+  activatedAt               DateTime?       @map("activated_at")
+  cancelledAt               DateTime?       @map("cancelled_at")
+  version                   Int             @default(1)
+  createdAt                 DateTime        @default(now()) @map("created_at")
+  updatedAt                 DateTime        @updatedAt @map("updated_at")
+  tenant                    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient                   Patient           @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  createdByNutritionist     Nutritionist      @relation("MealPlanCreatedBy", fields: [createdByNutritionistId], references: [id], onDelete: Restrict)
+  responsibleNutritionist   Nutritionist      @relation("MealPlanResponsible", fields: [responsibleNutritionistId], references: [id], onDelete: Restrict)
+  originClinicalEncounter   ClinicalEncounter? @relation("MealPlanOriginEncounter", fields: [originClinicalEncounterId], references: [id], onDelete: Restrict)
+  originAnamnesis           Anamnesis?        @relation("MealPlanOriginAnamnesis", fields: [originAnamnesisId], references: [id], onDelete: Restrict)
+  meals                     MealPlanMeal[]
+
+  @@index([tenantId])
+  @@index([tenantId, patientId])
+  @@index([tenantId, patientId, status])
+  @@index([tenantId, status])
+  @@index([tenantId, responsibleNutritionistId])
+  @@index([tenantId, responsibleNutritionistId, status])
+  @@index([tenantId, originClinicalEncounterId])
+  @@map("meal_plans")
+}
+
+model MealPlanMeal {
+  id                String   @id @default(uuid())
+  mealPlanId        String   @map("meal_plan_id")
+  sortOrder         Int      @map("sort_order")
+  name              String
+  scheduledTime     String?  @map("scheduled_time")
+  content           String?  @db.Text
+  substitutionNotes String?  @map("substitution_notes") @db.Text
+  mealPlan          MealPlan @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+
+  @@index([mealPlanId])
+  @@map("meal_plan_meals")
 }
 
 enum PatientNutritionistAssignmentStatus {

@@ -13,6 +13,7 @@ import type { AnthropometricAssessmentRepository } from '../domain/repositories/
 import type { BodyCompositionAssessmentRepository } from '../domain/repositories/body-composition-assessment-repository.js';
 import type { ClinicalObjectiveRepository } from '../domain/repositories/clinical-objective-repository.js';
 import type { NutritionDiagnosisRepository } from '../domain/repositories/nutrition-diagnosis-repository.js';
+import type { MealPlanRepository } from '../domain/repositories/meal-plan-repository.js';
 import type { AnamnesisCompletionPolicy } from '../domain/policies/anamnesis-completion-policy.js';
 import type { BodyMassIndexClassificationPolicy } from '../domain/policies/body-mass-index-classification-policy.js';
 import type { BodyCompositionConsistencyPolicy } from '../domain/policies/body-composition-consistency-policy.js';
@@ -54,6 +55,15 @@ import { ChangeNutritionDiagnosisResponsibleNutritionistHandler } from '../appli
 import { FindNutritionDiagnosisHandler } from '../application/find-nutrition-diagnosis/find-nutrition-diagnosis.handler.js';
 import { FindNutritionDiagnosesByPatientHandler } from '../application/find-nutrition-diagnoses-by-patient/find-nutrition-diagnoses-by-patient.handler.js';
 import { FindConfirmedNutritionDiagnosesByPatientHandler } from '../application/find-confirmed-nutrition-diagnoses-by-patient/find-confirmed-nutrition-diagnoses-by-patient.handler.js';
+import { CreateMealPlanHandler } from '../application/create-meal-plan/create-meal-plan.handler.js';
+import { EditMealPlanHandler } from '../application/edit-meal-plan/edit-meal-plan.handler.js';
+import { ActivateMealPlanHandler } from '../application/activate-meal-plan/activate-meal-plan.handler.js';
+import { CancelMealPlanHandler } from '../application/cancel-meal-plan/cancel-meal-plan.handler.js';
+import { ChangeMealPlanResponsibleNutritionistHandler } from '../application/change-meal-plan-responsible-nutritionist/change-meal-plan-responsible-nutritionist.handler.js';
+import { FindMealPlanHandler } from '../application/find-meal-plan/find-meal-plan.handler.js';
+import { FindMealPlansByPatientHandler } from '../application/find-meal-plans-by-patient/find-meal-plans-by-patient.handler.js';
+import { FindActiveMealPlansByPatientHandler } from '../application/find-active-meal-plans-by-patient/find-active-meal-plans-by-patient.handler.js';
+import { FindLatestMealPlanByPatientHandler } from '../application/find-latest-meal-plan-by-patient/find-latest-meal-plan-by-patient.handler.js';
 
 export interface ClinicalFactoryDependencies {
   encounterRepository: ClinicalEncounterRepository;
@@ -62,6 +72,7 @@ export interface ClinicalFactoryDependencies {
   bodyCompositionAssessmentRepository: BodyCompositionAssessmentRepository;
   clinicalObjectiveRepository: ClinicalObjectiveRepository;
   nutritionDiagnosisRepository: NutritionDiagnosisRepository;
+  mealPlanRepository: MealPlanRepository;
   anthropometricAssessmentDirectory: AnthropometricAssessmentDirectoryPort;
   tenantDirectory: TenantDirectoryPort;
   patientDirectory: PatientDirectoryPort;
@@ -115,6 +126,15 @@ export interface ClinicalHandlers {
   findNutritionDiagnosisHandler: FindNutritionDiagnosisHandler;
   findNutritionDiagnosesByPatientHandler: FindNutritionDiagnosesByPatientHandler;
   findConfirmedNutritionDiagnosesByPatientHandler: FindConfirmedNutritionDiagnosesByPatientHandler;
+  createMealPlanHandler: CreateMealPlanHandler;
+  editMealPlanHandler: EditMealPlanHandler;
+  activateMealPlanHandler: ActivateMealPlanHandler;
+  cancelMealPlanHandler: CancelMealPlanHandler;
+  changeMealPlanResponsibleNutritionistHandler: ChangeMealPlanResponsibleNutritionistHandler;
+  findMealPlanHandler: FindMealPlanHandler;
+  findMealPlansByPatientHandler: FindMealPlansByPatientHandler;
+  findActiveMealPlansByPatientHandler: FindActiveMealPlansByPatientHandler;
+  findLatestMealPlanByPatientHandler: FindLatestMealPlanByPatientHandler;
 }
 
 export function createClinicalHandlers(
@@ -311,5 +331,47 @@ export function createClinicalHandlers(
       new FindConfirmedNutritionDiagnosesByPatientHandler(
         deps.nutritionDiagnosisRepository,
       ),
+    createMealPlanHandler: new CreateMealPlanHandler(
+      deps.mealPlanRepository,
+      deps.tenantDirectory,
+      deps.patientClinicalDirectory,
+      deps.nutritionistDirectory,
+      deps.clinicalEncounterDirectory,
+      deps.anamnesisDirectory,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    editMealPlanHandler: new EditMealPlanHandler(
+      deps.mealPlanRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    activateMealPlanHandler: new ActivateMealPlanHandler(
+      deps.mealPlanRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    cancelMealPlanHandler: new CancelMealPlanHandler(
+      deps.mealPlanRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    changeMealPlanResponsibleNutritionistHandler:
+      new ChangeMealPlanResponsibleNutritionistHandler(
+        deps.mealPlanRepository,
+        deps.nutritionistDirectory,
+        deps.clock,
+        deps.eventDispatcher,
+      ),
+    findMealPlanHandler: new FindMealPlanHandler(deps.mealPlanRepository),
+    findMealPlansByPatientHandler: new FindMealPlansByPatientHandler(
+      deps.mealPlanRepository,
+    ),
+    findActiveMealPlansByPatientHandler: new FindActiveMealPlansByPatientHandler(
+      deps.mealPlanRepository,
+    ),
+    findLatestMealPlanByPatientHandler: new FindLatestMealPlanByPatientHandler(
+      deps.mealPlanRepository,
+    ),
   };
 }
