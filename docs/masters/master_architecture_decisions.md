@@ -529,6 +529,45 @@ Aprovado — Proposto (FEATURE-038)
 
 ---
 
+# ADR-0022
+
+## OutcomeTracking como julgamento clínico estruturado ancorado a ClinicalObjective
+
+### Contexto
+
+FEATURE-039 introduz Outcome Tracking no módulo Clinical. O domínio Care define acompanhamento de resultados como avaliação estruturada de efetividade terapêutica (`master_database` §16). ClinicalEvolution (FEATURE-038, ADR-0021) registra narrativa longitudinal intermomentos; OutcomeTracking formaliza **conclusão clínica estruturada** sobre progresso de um objetivo específico.
+
+### Decisão
+
+> **OutcomeTracking records a single clinical conclusion about therapeutic progress for a ClinicalObjective.**
+
+`OutcomeTracking` será implementado como **Aggregate Root independente**, cluster **patient-scoped**:
+
+- Relacionamento **obrigatório** com `ClinicalObjective` via `clinicalObjectiveId`
+- Lifecycle: **`DRAFT → RECORDED`** via **`record()`**; **`DRAFT → CANCELLED`** via **`cancel()`**
+- **`RECORDED` imutável** para conteúdo clínico; retificações futuras exigem novo registro (BACKLOG-014)
+- **`OutcomeAssessment`** único veredito clínico: `ON_TRACK`, `PARTIAL`, `STABLE`, `STALLED`, `REGRESSED`, `GOAL_ACHIEVED`, `NOT_EVALUABLE`
+- **`AdherenceFactor`** opcional e subordinado: `FULL`, `PARTIAL`, `LOW`, `UNKNOWN`
+- **`GOAL_ACHIEVED`** distingue veredito avaliativo momentâneo de `ClinicalObjective.complete()` / status `COMPLETED`
+- Proveniência opcional: `originClinicalEncounterId`, `originAnamnesisId`, `clinicalMomentAt`
+- **Sem referências a evidências** no write model; composição query-side (ADR-0019, BACKLOG-017)
+- Ordenação cronológica: `evaluatedAt` → `recordedAt` → `createdAt` → `id`
+- **`record()` não produz side-effects** em `ClinicalObjective` em v1
+- `NOT_EVALUABLE` exige `professionalRationale` na policy de gravação
+
+### Justificativa
+
+- Preserva separação semântica: ClinicalEvolution explica; OutcomeTracking conclui
+- Evita combinações clinicamente incoerentes de múltiplos enums independentes
+- Alinha com padrão patient-scoped (ClinicalObjective, MealPlan, ADR-0016)
+- Protege lifecycle distinto de objetivo (ACTIVE/COMPLETED) vs veredito momentâneo (GOAL_ACHIEVED)
+
+### Status
+
+Aprovado — Implementado (FEATURE-039)
+
+---
+
 # Governança
 
 Toda nova decisão arquitetural deverá receber um novo ADR.

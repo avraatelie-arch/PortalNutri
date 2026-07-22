@@ -64,8 +64,15 @@ const clock = new FixedClock(NOW);
 
 async function resetAppointments() {
   await prisma.appointment.deleteMany();
-  await prisma.anamnesis.deleteMany();
+  await prisma.outcomeTracking.deleteMany();
   await prisma.clinicalEvolution.deleteMany();
+  await prisma.anamnesis.deleteMany();
+  await prisma.clinicalObjective.deleteMany();
+  await prisma.prescription.deleteMany();
+  await prisma.mealPlan.deleteMany();
+  await prisma.nutritionDiagnosis.deleteMany();
+  await prisma.bodyCompositionAssessment.deleteMany();
+  await prisma.anthropometricAssessment.deleteMany();
   await prisma.clinicalEncounter.deleteMany();
   await prisma.patientNutritionistAssignment.deleteMany();
   await prisma.patient.deleteMany();

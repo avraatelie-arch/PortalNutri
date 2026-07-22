@@ -84,8 +84,20 @@ import { FindClinicalEvolutionByEncounterHandler } from '../application/find-cli
 import { FindClinicalEvolutionsByPatientHandler } from '../application/find-clinical-evolutions-by-patient/find-clinical-evolutions-by-patient.handler.js';
 import { FindLatestFinalizedClinicalEvolutionByPatientHandler } from '../application/find-latest-finalized-clinical-evolution-by-patient/find-latest-finalized-clinical-evolution-by-patient.handler.js';
 import { FindPreviousFinalizedClinicalEvolutionHandler } from '../application/find-previous-finalized-clinical-evolution/find-previous-finalized-clinical-evolution.handler.js';
+import { StartOutcomeTrackingHandler } from '../application/start-outcome-tracking/start-outcome-tracking.handler.js';
+import { EditOutcomeTrackingHandler } from '../application/edit-outcome-tracking/edit-outcome-tracking.handler.js';
+import { RecordOutcomeTrackingHandler } from '../application/record-outcome-tracking/record-outcome-tracking.handler.js';
+import { CancelOutcomeTrackingHandler } from '../application/cancel-outcome-tracking/cancel-outcome-tracking.handler.js';
+import { ChangeOutcomeTrackingResponsibleNutritionistHandler } from '../application/change-outcome-tracking-responsible-nutritionist/change-outcome-tracking-responsible-nutritionist.handler.js';
+import { FindOutcomeTrackingHandler } from '../application/find-outcome-tracking/find-outcome-tracking.handler.js';
+import { FindOutcomeTrackingsByPatientHandler } from '../application/find-outcome-trackings-by-patient/find-outcome-trackings-by-patient.handler.js';
+import { FindOutcomeTrackingsByClinicalObjectiveHandler } from '../application/find-outcome-trackings-by-clinical-objective/find-outcome-trackings-by-clinical-objective.handler.js';
+import { FindLatestRecordedOutcomeTrackingByClinicalObjectiveHandler } from '../application/find-latest-recorded-outcome-tracking-by-clinical-objective/find-latest-recorded-outcome-tracking-by-clinical-objective.handler.js';
+import { FindPreviousRecordedOutcomeTrackingByClinicalObjectiveHandler } from '../application/find-previous-recorded-outcome-tracking-by-clinical-objective/find-previous-recorded-outcome-tracking-by-clinical-objective.handler.js';
 import type { ClinicalEvolutionRepository } from '../domain/repositories/clinical-evolution-repository.js';
+import type { OutcomeTrackingRepository } from '../domain/repositories/outcome-tracking-repository.js';
 import type { EvolutionFinalizationPolicy } from '../domain/policies/evolution-finalization-policy.js';
+import type { OutcomeRecordingPolicy } from '../domain/policies/outcome-recording-policy.js';
 
 export interface ClinicalFactoryDependencies {
   encounterRepository: ClinicalEncounterRepository;
@@ -97,6 +109,7 @@ export interface ClinicalFactoryDependencies {
   mealPlanRepository: MealPlanRepository;
   prescriptionRepository: PrescriptionRepository;
   clinicalEvolutionRepository: ClinicalEvolutionRepository;
+  outcomeTrackingRepository: OutcomeTrackingRepository;
   anthropometricAssessmentDirectory: AnthropometricAssessmentDirectoryPort;
   tenantDirectory: TenantDirectoryPort;
   patientDirectory: PatientDirectoryPort;
@@ -107,6 +120,7 @@ export interface ClinicalFactoryDependencies {
   patientClinicalDirectory: PatientClinicalDirectoryPort;
   anamnesisCompletionPolicy: AnamnesisCompletionPolicy;
   evolutionFinalizationPolicy: EvolutionFinalizationPolicy;
+  outcomeRecordingPolicy: OutcomeRecordingPolicy;
   bodyMassIndexClassificationPolicy: BodyMassIndexClassificationPolicy;
   bodyCompositionConsistencyPolicy: BodyCompositionConsistencyPolicy;
   clock: Clock;
@@ -179,6 +193,16 @@ export interface ClinicalHandlers {
   findClinicalEvolutionsByPatientHandler: FindClinicalEvolutionsByPatientHandler;
   findLatestFinalizedClinicalEvolutionByPatientHandler: FindLatestFinalizedClinicalEvolutionByPatientHandler;
   findPreviousFinalizedClinicalEvolutionHandler: FindPreviousFinalizedClinicalEvolutionHandler;
+  startOutcomeTrackingHandler: StartOutcomeTrackingHandler;
+  editOutcomeTrackingHandler: EditOutcomeTrackingHandler;
+  recordOutcomeTrackingHandler: RecordOutcomeTrackingHandler;
+  cancelOutcomeTrackingHandler: CancelOutcomeTrackingHandler;
+  changeOutcomeTrackingResponsibleNutritionistHandler: ChangeOutcomeTrackingResponsibleNutritionistHandler;
+  findOutcomeTrackingHandler: FindOutcomeTrackingHandler;
+  findOutcomeTrackingsByPatientHandler: FindOutcomeTrackingsByPatientHandler;
+  findOutcomeTrackingsByClinicalObjectiveHandler: FindOutcomeTrackingsByClinicalObjectiveHandler;
+  findLatestRecordedOutcomeTrackingByClinicalObjectiveHandler: FindLatestRecordedOutcomeTrackingByClinicalObjectiveHandler;
+  findPreviousRecordedOutcomeTrackingByClinicalObjectiveHandler: FindPreviousRecordedOutcomeTrackingByClinicalObjectiveHandler;
 }
 
 export function createClinicalHandlers(
@@ -505,6 +529,59 @@ export function createClinicalHandlers(
     findPreviousFinalizedClinicalEvolutionHandler:
       new FindPreviousFinalizedClinicalEvolutionHandler(
         deps.clinicalEvolutionRepository,
+      ),
+    startOutcomeTrackingHandler: new StartOutcomeTrackingHandler(
+      deps.outcomeTrackingRepository,
+      deps.clinicalObjectiveRepository,
+      deps.encounterRepository,
+      deps.tenantDirectory,
+      deps.patientClinicalDirectory,
+      deps.nutritionistDirectory,
+      deps.anamnesisDirectory,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    editOutcomeTrackingHandler: new EditOutcomeTrackingHandler(
+      deps.outcomeTrackingRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    recordOutcomeTrackingHandler: new RecordOutcomeTrackingHandler(
+      deps.outcomeTrackingRepository,
+      deps.clinicalEncounterDirectory,
+      deps.outcomeRecordingPolicy,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    cancelOutcomeTrackingHandler: new CancelOutcomeTrackingHandler(
+      deps.outcomeTrackingRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    changeOutcomeTrackingResponsibleNutritionistHandler:
+      new ChangeOutcomeTrackingResponsibleNutritionistHandler(
+        deps.outcomeTrackingRepository,
+        deps.nutritionistDirectory,
+        deps.clock,
+        deps.eventDispatcher,
+      ),
+    findOutcomeTrackingHandler: new FindOutcomeTrackingHandler(
+      deps.outcomeTrackingRepository,
+    ),
+    findOutcomeTrackingsByPatientHandler: new FindOutcomeTrackingsByPatientHandler(
+      deps.outcomeTrackingRepository,
+    ),
+    findOutcomeTrackingsByClinicalObjectiveHandler:
+      new FindOutcomeTrackingsByClinicalObjectiveHandler(
+        deps.outcomeTrackingRepository,
+      ),
+    findLatestRecordedOutcomeTrackingByClinicalObjectiveHandler:
+      new FindLatestRecordedOutcomeTrackingByClinicalObjectiveHandler(
+        deps.outcomeTrackingRepository,
+      ),
+    findPreviousRecordedOutcomeTrackingByClinicalObjectiveHandler:
+      new FindPreviousRecordedOutcomeTrackingByClinicalObjectiveHandler(
+        deps.outcomeTrackingRepository,
       ),
   };
 }

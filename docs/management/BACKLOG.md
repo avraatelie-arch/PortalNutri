@@ -2,7 +2,7 @@
 
 Backlog de features do PortalNutri Platform. Atualizado conforme evolução do desenvolvimento.
 
-**Última atualização:** 2026-07-21
+**Última atualização:** 2026-07-22
 
 ---
 
@@ -81,3 +81,7 @@ Backlog de features do PortalNutri Platform. Atualizado conforme evolução do d
 | BACKLOG-008 | Prescription Templates — reusable line templates copied into DRAFT prescriptions without Protocol/product FK coupling | P2 | ⏳ Backlog | FEATURE-037 implementa Prescription independente (ADR-0020); templates de linhas reutilizáveis e integração opcional com Protocol BC deferidos para evitar acoplamento prematuro |
 | BACKLOG-012 | Late ClinicalEvolution registration without encounter | P2 | ⏳ Backlog | FEATURE-038 v1 exige 1:1 com ClinicalEncounter OPEN; registro tardio com proveniência deferido |
 | BACKLOG-013 | ClinicalEvolution amendment records post-FINALIZED | P2 | ⏳ Backlog | FEATURE-038 v1 trata FINALIZED como imutável; retificações via novo registro com `amendsClinicalEvolutionId` deferido |
+| BACKLOG-014 | OutcomeTracking amendment records post-RECORDED | P2 | ⏳ Backlog | FEATURE-039 v1 trata RECORDED como imutável; retificações via novo registro deferido |
+| BACKLOG-015 | TreatmentResponseFactor complementar em OutcomeTracking | P3 | ⏳ Backlog | FEATURE-039 v1 usa apenas `OutcomeAssessment` + `AdherenceFactor` opcional; fator de resposta terapêutica deferido se casos limítrofes recorrentes |
+| BACKLOG-016 | Late OutcomeTracking registration without encounter | P2 | ⏳ Backlog | FEATURE-039 v1 aceita encounter opcional; registro tardio com proveniência alternativa deferido |
+| BACKLOG-017 | ClinicalChart composition incluindo outcomes e evidências query-side | P2 | ⏳ Backlog | FEATURE-039 v1 persiste apenas conclusão estruturada; composição de prontuário com evidências deferida para read model |

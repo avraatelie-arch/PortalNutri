@@ -20,7 +20,9 @@ import { PrismaNutritionDiagnosisRepository } from './infrastructure/repositorie
 import { PrismaMealPlanRepository } from './infrastructure/repositories/prisma-meal-plan.repository.js';
 import { PrismaPrescriptionRepository } from './infrastructure/repositories/prisma-prescription.repository.js';
 import { PrismaClinicalEvolutionRepository } from './infrastructure/repositories/prisma-clinical-evolution.repository.js';
+import { PrismaOutcomeTrackingRepository } from './infrastructure/repositories/prisma-outcome-tracking.repository.js';
 import { DefaultEvolutionFinalizationPolicy } from './domain/policies/evolution-finalization-policy.js';
+import { DefaultOutcomeRecordingPolicy } from './domain/policies/outcome-recording-policy.js';
 import { PrismaAnthropometricAssessmentDirectoryAdapter } from './infrastructure/adapters/prisma-anthropometric-assessment-directory.adapter.js';
 import { PrismaTenantDirectoryAdapter } from './infrastructure/adapters/prisma-tenant-directory.adapter.js';
 import { PrismaPatientDirectoryAdapter } from './infrastructure/adapters/prisma-patient-directory.adapter.js';
@@ -53,6 +55,7 @@ export function createClinicalDependencies(
       mealPlanRepository: new PrismaMealPlanRepository(prisma),
       prescriptionRepository: new PrismaPrescriptionRepository(prisma),
       clinicalEvolutionRepository: new PrismaClinicalEvolutionRepository(prisma),
+      outcomeTrackingRepository: new PrismaOutcomeTrackingRepository(prisma),
       anthropometricAssessmentDirectory:
         new PrismaAnthropometricAssessmentDirectoryAdapter(prisma),
       tenantDirectory: new PrismaTenantDirectoryAdapter(prisma),
@@ -68,6 +71,7 @@ export function createClinicalDependencies(
       ),
       anamnesisCompletionPolicy: new DefaultAnamnesisCompletionPolicy(),
       evolutionFinalizationPolicy: new DefaultEvolutionFinalizationPolicy(),
+      outcomeRecordingPolicy: new DefaultOutcomeRecordingPolicy(),
       bodyMassIndexClassificationPolicy:
         new DefaultBodyMassIndexClassificationPolicy(),
       bodyCompositionConsistencyPolicy: new BodyCompositionConsistencyPolicy(),

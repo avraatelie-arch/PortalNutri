@@ -186,6 +186,7 @@ model Tenant {
   mealPlans                      MealPlan[]
   prescriptions                  Prescription[]
   clinicalEvolutions             ClinicalEvolution[]
+  outcomeTrackings               OutcomeTracking[]
 
   @@map("tenants")
 }
@@ -247,6 +248,8 @@ model Nutritionist {
   prescriptionsResponsible      Prescription[]       @relation("PrescriptionResponsible")
   clinicalEvolutionsCreated     ClinicalEvolution[]  @relation("ClinicalEvolutionCreatedBy")
   clinicalEvolutionsResponsible ClinicalEvolution[]  @relation("ClinicalEvolutionResponsible")
+  outcomeTrackingsCreated       OutcomeTracking[]    @relation("OutcomeTrackingCreatedBy")
+  outcomeTrackingsResponsible   OutcomeTracking[]    @relation("OutcomeTrackingResponsible")
 
   @@unique([tenantId, crn])
   @@index([personId])
@@ -289,6 +292,7 @@ model Patient {
   mealPlans                  MealPlan[]
   prescriptions              Prescription[]
   clinicalEvolutions         ClinicalEvolution[]
+  outcomeTrackings           OutcomeTracking[]
 
   @@index([tenantId])
   @@map("patients")
@@ -374,6 +378,7 @@ model ClinicalEncounter {
   originMealPlans          MealPlan[]           @relation("MealPlanOriginEncounter")
   originPrescriptions      Prescription[]       @relation("PrescriptionOriginEncounter")
   clinicalEvolution      ClinicalEvolution?
+  originOutcomeTrackings OutcomeTracking[] @relation("OutcomeTrackingOriginEncounter")
 
   @@index([tenantId])
   @@index([patientId])
@@ -419,6 +424,7 @@ model Anamnesis {
   originNutritionDiagnoses NutritionDiagnosis[] @relation("NutritionDiagnosisOriginAnamnesis")
   originMealPlans          MealPlan[]           @relation("MealPlanOriginAnamnesis")
   originPrescriptions      Prescription[]       @relation("PrescriptionOriginAnamnesis")
+  originOutcomeTrackings   OutcomeTracking[]    @relation("OutcomeTrackingOriginAnamnesis")
 
   @@index([tenantId])
   @@index([patientId])
@@ -595,6 +601,7 @@ model ClinicalObjective {
   responsibleNutritionist     Nutritionist              @relation("ClinicalObjectiveResponsible", fields: [responsibleNutritionistId], references: [id], onDelete: Restrict)
   originClinicalEncounter     ClinicalEncounter?        @relation("ClinicalObjectiveOriginEncounter", fields: [originClinicalEncounterId], references: [id], onDelete: Restrict)
   originAnamnesis             Anamnesis?                @relation("ClinicalObjectiveOriginAnamnesis", fields: [originAnamnesisId], references: [id], onDelete: Restrict)
+  outcomeTrackings            OutcomeTracking[]
 
   @@index([tenantId])
   @@index([tenantId, patientId])
@@ -852,6 +859,67 @@ model ClinicalEvolution {
   @@index([tenantId, patientId, status])
   @@index([tenantId, patientId, clinicalMomentAt])
   @@map("clinical_evolutions")
+}
+
+enum OutcomeTrackingStatus {
+  DRAFT
+  RECORDED
+  CANCELLED
+}
+
+enum OutcomeAssessment {
+  ON_TRACK
+  PARTIAL
+  STABLE
+  STALLED
+  REGRESSED
+  GOAL_ACHIEVED
+  NOT_EVALUABLE
+}
+
+enum AdherenceFactor {
+  FULL
+  PARTIAL
+  LOW
+  UNKNOWN
+}
+
+model OutcomeTracking {
+  id                          String                 @id @default(uuid())
+  tenantId                    String                 @map("tenant_id")
+  patientId                   String                 @map("patient_id")
+  clinicalObjectiveId         String                 @map("clinical_objective_id")
+  createdByNutritionistId     String                 @map("created_by_nutritionist_id")
+  responsibleNutritionistId   String                 @map("responsible_nutritionist_id")
+  originClinicalEncounterId   String?                @map("origin_clinical_encounter_id")
+  originAnamnesisId           String?                @map("origin_anamnesis_id")
+  status                      OutcomeTrackingStatus  @default(DRAFT)
+  version                     Int                    @default(1)
+  clinicalMomentAt            DateTime?              @map("clinical_moment_at")
+  outcomeAssessment           OutcomeAssessment?     @map("outcome_assessment")
+  adherenceFactor             AdherenceFactor?       @map("adherence_factor")
+  professionalRationale       String?                @map("professional_rationale") @db.Text
+  clinicalNotes               String?                @map("clinical_notes") @db.Text
+  evaluatedAt                 DateTime?              @map("evaluated_at")
+  recordedAt                  DateTime?              @map("recorded_at")
+  cancelledAt                 DateTime?              @map("cancelled_at")
+  createdAt                   DateTime               @default(now()) @map("created_at")
+  updatedAt                   DateTime               @updatedAt @map("updated_at")
+  tenant                      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient                     Patient                @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  clinicalObjective           ClinicalObjective      @relation(fields: [clinicalObjectiveId], references: [id], onDelete: Restrict)
+  createdByNutritionist       Nutritionist           @relation("OutcomeTrackingCreatedBy", fields: [createdByNutritionistId], references: [id], onDelete: Restrict)
+  responsibleNutritionist     Nutritionist           @relation("OutcomeTrackingResponsible", fields: [responsibleNutritionistId], references: [id], onDelete: Restrict)
+  originClinicalEncounter     ClinicalEncounter?     @relation("OutcomeTrackingOriginEncounter", fields: [originClinicalEncounterId], references: [id], onDelete: Restrict)
+  originAnamnesis             Anamnesis?             @relation("OutcomeTrackingOriginAnamnesis", fields: [originAnamnesisId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, patientId])
+  @@index([tenantId, patientId, status])
+  @@index([tenantId, clinicalObjectiveId])
+  @@index([tenantId, clinicalObjectiveId, status])
+  @@index([tenantId, clinicalObjectiveId, evaluatedAt])
+  @@map("outcome_trackings")
 }
 
 enum PatientNutritionistAssignmentStatus {

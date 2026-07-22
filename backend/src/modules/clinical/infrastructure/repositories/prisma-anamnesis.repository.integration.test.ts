@@ -89,6 +89,7 @@ const laterClock = new FixedClock(LATER);
 
 async function resetDatabase() {
   await prisma.anamnesis.deleteMany();
+  await prisma.outcomeTracking.deleteMany();
   await prisma.clinicalEvolution.deleteMany();
   await prisma.clinicalEncounter.deleteMany();
   await prisma.appointment.deleteMany();
