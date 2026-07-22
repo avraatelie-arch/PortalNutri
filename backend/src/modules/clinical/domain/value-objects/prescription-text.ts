@@ -1,0 +1,1 @@
+export const PRESCRIPTION_TEXT_MAX_LENGTH = 4000;

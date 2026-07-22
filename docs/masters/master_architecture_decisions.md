@@ -456,6 +456,40 @@ Aprovado — Proposto (implementação deferida; BACKLOG-007)
 
 ---
 
+# ADR-0020
+
+## Prescription como Aggregate Root Independente no Clinical
+
+### Contexto
+
+O domínio Care e o `master_database` descrevem Protocolos com itens de prescrição estruturados. FEATURE-037 introduz Prescrição no módulo Clinical como registro patient-scoped emitido pelo nutricionista.
+
+### Decisão
+
+`Prescription` será implementado como **Aggregate Root independente** no Bounded Context Clinical, **não** como entidade filha de Protocol (Catalog/Protocols BC).
+
+Semânticas v1:
+
+- Lifecycle: `DRAFT → ISSUED → CANCELLED`; verbo de publicação **`emit()`** (não `activate()`)
+- `ISSUED` imutável; `issuedAt` marca emissão
+- Linhas (`PrescriptionLine`) são instruções terapêuticas textuais — sem FK de produto, categoria ou protocolo aplicado
+- Dose = `DoseQuantity` + `DoseUnit`; `OTHER` exige `customDisplay`
+- Frequency = `displayText` obrigatório na emissão + `timesPerDay`/`intervalHours` opcionais
+
+Integração futura com Templates/Protocolos permanece via BACKLOG-008 (cópia de linhas para draft), sem acoplamento de persistência cross-BC.
+
+### Justificativa
+
+- Preserva isolamento de BCs e lifecycles distintos (template reutilizável vs prescrição emitida ao paciente)
+- Alinha com padrão patient-scoped já estabelecido (ClinicalObjective, NutritionDiagnosis, MealPlan)
+- Evita FK rígida com catálogo de produtos inexistente em v1
+
+### Status
+
+Aprovado — Implementado (FEATURE-037)
+
+---
+
 # Governança
 
 Toda nova decisão arquitetural deverá receber um novo ADR.

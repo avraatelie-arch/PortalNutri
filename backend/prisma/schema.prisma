@@ -184,6 +184,7 @@ model Tenant {
   clinicalObjectives             ClinicalObjective[]
   nutritionDiagnoses             NutritionDiagnosis[]
   mealPlans                      MealPlan[]
+  prescriptions                  Prescription[]
 
   @@map("tenants")
 }
@@ -241,6 +242,8 @@ model Nutritionist {
   nutritionDiagnosesResponsible NutritionDiagnosis[] @relation("NutritionDiagnosisResponsible")
   mealPlansCreated              MealPlan[]           @relation("MealPlanCreatedBy")
   mealPlansResponsible          MealPlan[]           @relation("MealPlanResponsible")
+  prescriptionsCreated          Prescription[]       @relation("PrescriptionCreatedBy")
+  prescriptionsResponsible      Prescription[]       @relation("PrescriptionResponsible")
 
   @@unique([tenantId, crn])
   @@index([personId])
@@ -281,6 +284,7 @@ model Patient {
   clinicalObjectives         ClinicalObjective[]
   nutritionDiagnoses         NutritionDiagnosis[]
   mealPlans                  MealPlan[]
+  prescriptions              Prescription[]
 
   @@index([tenantId])
   @@map("patients")
@@ -364,6 +368,7 @@ model ClinicalEncounter {
   originClinicalObjectives ClinicalObjective[] @relation("ClinicalObjectiveOriginEncounter")
   originNutritionDiagnoses NutritionDiagnosis[] @relation("NutritionDiagnosisOriginEncounter")
   originMealPlans          MealPlan[]           @relation("MealPlanOriginEncounter")
+  originPrescriptions      Prescription[]       @relation("PrescriptionOriginEncounter")
 
   @@index([tenantId])
   @@index([patientId])
@@ -408,6 +413,7 @@ model Anamnesis {
   originClinicalObjectives ClinicalObjective[] @relation("ClinicalObjectiveOriginAnamnesis")
   originNutritionDiagnoses NutritionDiagnosis[] @relation("NutritionDiagnosisOriginAnamnesis")
   originMealPlans          MealPlan[]           @relation("MealPlanOriginAnamnesis")
+  originPrescriptions      Prescription[]       @relation("PrescriptionOriginAnamnesis")
 
   @@index([tenantId])
   @@index([patientId])
@@ -717,6 +723,91 @@ model MealPlanMeal {
 
   @@index([mealPlanId])
   @@map("meal_plan_meals")
+}
+
+enum PrescriptionStatus {
+  DRAFT
+  ISSUED
+  CANCELLED
+}
+
+enum DoseUnit {
+  MG
+  G
+  MCG
+  ML
+  L
+  IU
+  UI
+  CAPSULE
+  TABLET
+  SACHET
+  SCOOP
+  DROP
+  APPLICATION
+  UNIT
+  OTHER
+}
+
+model Prescription {
+  id                        String             @id @default(uuid())
+  tenantId                  String             @map("tenant_id")
+  patientId                 String             @map("patient_id")
+  createdByNutritionistId   String             @map("created_by_nutritionist_id")
+  responsibleNutritionistId String             @map("responsible_nutritionist_id")
+  originClinicalEncounterId String?            @map("origin_clinical_encounter_id")
+  originAnamnesisId         String?            @map("origin_anamnesis_id")
+  status                    PrescriptionStatus @default(DRAFT)
+  title                     String             @default("")
+  clinicalNotes             String?            @map("clinical_notes") @db.Text
+  patientInstructions       String?            @map("patient_instructions") @db.Text
+  cancellationReason        String?            @map("cancellation_reason") @db.Text
+  issuedAt                  DateTime?          @map("issued_at")
+  cancelledAt               DateTime?          @map("cancelled_at")
+  version                   Int                @default(1)
+  createdAt                 DateTime           @default(now()) @map("created_at")
+  updatedAt                 DateTime           @updatedAt @map("updated_at")
+  tenant                    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient                   Patient            @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  createdByNutritionist     Nutritionist       @relation("PrescriptionCreatedBy", fields: [createdByNutritionistId], references: [id], onDelete: Restrict)
+  responsibleNutritionist   Nutritionist       @relation("PrescriptionResponsible", fields: [responsibleNutritionistId], references: [id], onDelete: Restrict)
+  originClinicalEncounter   ClinicalEncounter? @relation("PrescriptionOriginEncounter", fields: [originClinicalEncounterId], references: [id], onDelete: Restrict)
+  originAnamnesis           Anamnesis?         @relation("PrescriptionOriginAnamnesis", fields: [originAnamnesisId], references: [id], onDelete: Restrict)
+  lines                     PrescriptionLine[]
+
+  @@index([tenantId])
+  @@index([tenantId, patientId])
+  @@index([tenantId, patientId, status])
+  @@index([tenantId, status])
+  @@index([tenantId, responsibleNutritionistId])
+  @@index([tenantId, responsibleNutritionistId, status])
+  @@index([tenantId, originClinicalEncounterId])
+  @@map("prescriptions")
+}
+
+model PrescriptionLine {
+  id                         String    @id @default(uuid())
+  prescriptionId             String    @map("prescription_id")
+  sortOrder                  Int       @map("sort_order")
+  description                String    @default("")
+  doseQuantity               Decimal?  @map("dose_quantity") @db.Decimal(18, 4)
+  doseUnit                   DoseUnit? @map("dose_unit")
+  doseUnitCustomDisplay      String?   @map("dose_unit_custom_display")
+  frequencyDisplayText       String?   @map("frequency_display_text")
+  frequencyTimesPerDay       Int?      @map("frequency_times_per_day")
+  frequencyIntervalHours     Int?      @map("frequency_interval_hours")
+  dosageForm                 String?   @map("dosage_form")
+  administrationRoute        String?   @map("administration_route")
+  activeIngredients          String?   @map("active_ingredients") @db.Text
+  concentration              String?
+  duration                   String?
+  administrationInstructions String?   @map("administration_instructions") @db.Text
+  lineClinicalNotes          String?   @map("line_clinical_notes") @db.Text
+  patientInstructions        String?   @map("patient_instructions") @db.Text
+  prescription               Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@index([prescriptionId])
+  @@map("prescription_lines")
 }
 
 enum PatientNutritionistAssignmentStatus {

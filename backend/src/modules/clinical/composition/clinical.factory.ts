@@ -14,6 +14,7 @@ import type { BodyCompositionAssessmentRepository } from '../domain/repositories
 import type { ClinicalObjectiveRepository } from '../domain/repositories/clinical-objective-repository.js';
 import type { NutritionDiagnosisRepository } from '../domain/repositories/nutrition-diagnosis-repository.js';
 import type { MealPlanRepository } from '../domain/repositories/meal-plan-repository.js';
+import type { PrescriptionRepository } from '../domain/repositories/prescription-repository.js';
 import type { AnamnesisCompletionPolicy } from '../domain/policies/anamnesis-completion-policy.js';
 import type { BodyMassIndexClassificationPolicy } from '../domain/policies/body-mass-index-classification-policy.js';
 import type { BodyCompositionConsistencyPolicy } from '../domain/policies/body-composition-consistency-policy.js';
@@ -64,6 +65,15 @@ import { FindMealPlanHandler } from '../application/find-meal-plan/find-meal-pla
 import { FindMealPlansByPatientHandler } from '../application/find-meal-plans-by-patient/find-meal-plans-by-patient.handler.js';
 import { FindActiveMealPlansByPatientHandler } from '../application/find-active-meal-plans-by-patient/find-active-meal-plans-by-patient.handler.js';
 import { FindLatestMealPlanByPatientHandler } from '../application/find-latest-meal-plan-by-patient/find-latest-meal-plan-by-patient.handler.js';
+import { CreatePrescriptionHandler } from '../application/create-prescription/create-prescription.handler.js';
+import { EditPrescriptionHandler } from '../application/edit-prescription/edit-prescription.handler.js';
+import { EmitPrescriptionHandler } from '../application/emit-prescription/emit-prescription.handler.js';
+import { CancelPrescriptionHandler } from '../application/cancel-prescription/cancel-prescription.handler.js';
+import { ChangePrescriptionResponsibleNutritionistHandler } from '../application/change-prescription-responsible-nutritionist/change-prescription-responsible-nutritionist.handler.js';
+import { FindPrescriptionHandler } from '../application/find-prescription/find-prescription.handler.js';
+import { FindPrescriptionsByPatientHandler } from '../application/find-prescriptions-by-patient/find-prescriptions-by-patient.handler.js';
+import { FindIssuedPrescriptionsByPatientHandler } from '../application/find-issued-prescriptions-by-patient/find-issued-prescriptions-by-patient.handler.js';
+import { FindLatestPrescriptionByPatientHandler } from '../application/find-latest-prescription-by-patient/find-latest-prescription-by-patient.handler.js';
 
 export interface ClinicalFactoryDependencies {
   encounterRepository: ClinicalEncounterRepository;
@@ -73,6 +83,7 @@ export interface ClinicalFactoryDependencies {
   clinicalObjectiveRepository: ClinicalObjectiveRepository;
   nutritionDiagnosisRepository: NutritionDiagnosisRepository;
   mealPlanRepository: MealPlanRepository;
+  prescriptionRepository: PrescriptionRepository;
   anthropometricAssessmentDirectory: AnthropometricAssessmentDirectoryPort;
   tenantDirectory: TenantDirectoryPort;
   patientDirectory: PatientDirectoryPort;
@@ -135,6 +146,15 @@ export interface ClinicalHandlers {
   findMealPlansByPatientHandler: FindMealPlansByPatientHandler;
   findActiveMealPlansByPatientHandler: FindActiveMealPlansByPatientHandler;
   findLatestMealPlanByPatientHandler: FindLatestMealPlanByPatientHandler;
+  createPrescriptionHandler: CreatePrescriptionHandler;
+  editPrescriptionHandler: EditPrescriptionHandler;
+  emitPrescriptionHandler: EmitPrescriptionHandler;
+  cancelPrescriptionHandler: CancelPrescriptionHandler;
+  changePrescriptionResponsibleNutritionistHandler: ChangePrescriptionResponsibleNutritionistHandler;
+  findPrescriptionHandler: FindPrescriptionHandler;
+  findPrescriptionsByPatientHandler: FindPrescriptionsByPatientHandler;
+  findIssuedPrescriptionsByPatientHandler: FindIssuedPrescriptionsByPatientHandler;
+  findLatestPrescriptionByPatientHandler: FindLatestPrescriptionByPatientHandler;
 }
 
 export function createClinicalHandlers(
@@ -372,6 +392,47 @@ export function createClinicalHandlers(
     ),
     findLatestMealPlanByPatientHandler: new FindLatestMealPlanByPatientHandler(
       deps.mealPlanRepository,
+    ),
+    createPrescriptionHandler: new CreatePrescriptionHandler(
+      deps.prescriptionRepository,
+      deps.tenantDirectory,
+      deps.patientClinicalDirectory,
+      deps.nutritionistDirectory,
+      deps.clinicalEncounterDirectory,
+      deps.anamnesisDirectory,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    editPrescriptionHandler: new EditPrescriptionHandler(
+      deps.prescriptionRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    emitPrescriptionHandler: new EmitPrescriptionHandler(
+      deps.prescriptionRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    cancelPrescriptionHandler: new CancelPrescriptionHandler(
+      deps.prescriptionRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    changePrescriptionResponsibleNutritionistHandler:
+      new ChangePrescriptionResponsibleNutritionistHandler(
+        deps.prescriptionRepository,
+        deps.nutritionistDirectory,
+        deps.clock,
+        deps.eventDispatcher,
+      ),
+    findPrescriptionHandler: new FindPrescriptionHandler(deps.prescriptionRepository),
+    findPrescriptionsByPatientHandler: new FindPrescriptionsByPatientHandler(
+      deps.prescriptionRepository,
+    ),
+    findIssuedPrescriptionsByPatientHandler:
+      new FindIssuedPrescriptionsByPatientHandler(deps.prescriptionRepository),
+    findLatestPrescriptionByPatientHandler: new FindLatestPrescriptionByPatientHandler(
+      deps.prescriptionRepository,
     ),
   };
 }
