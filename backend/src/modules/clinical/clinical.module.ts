@@ -19,6 +19,8 @@ import { PrismaClinicalObjectiveRepository } from './infrastructure/repositories
 import { PrismaNutritionDiagnosisRepository } from './infrastructure/repositories/prisma-nutrition-diagnosis.repository.js';
 import { PrismaMealPlanRepository } from './infrastructure/repositories/prisma-meal-plan.repository.js';
 import { PrismaPrescriptionRepository } from './infrastructure/repositories/prisma-prescription.repository.js';
+import { PrismaClinicalEvolutionRepository } from './infrastructure/repositories/prisma-clinical-evolution.repository.js';
+import { DefaultEvolutionFinalizationPolicy } from './domain/policies/evolution-finalization-policy.js';
 import { PrismaAnthropometricAssessmentDirectoryAdapter } from './infrastructure/adapters/prisma-anthropometric-assessment-directory.adapter.js';
 import { PrismaTenantDirectoryAdapter } from './infrastructure/adapters/prisma-tenant-directory.adapter.js';
 import { PrismaPatientDirectoryAdapter } from './infrastructure/adapters/prisma-patient-directory.adapter.js';
@@ -50,6 +52,7 @@ export function createClinicalDependencies(
       nutritionDiagnosisRepository: new PrismaNutritionDiagnosisRepository(prisma),
       mealPlanRepository: new PrismaMealPlanRepository(prisma),
       prescriptionRepository: new PrismaPrescriptionRepository(prisma),
+      clinicalEvolutionRepository: new PrismaClinicalEvolutionRepository(prisma),
       anthropometricAssessmentDirectory:
         new PrismaAnthropometricAssessmentDirectoryAdapter(prisma),
       tenantDirectory: new PrismaTenantDirectoryAdapter(prisma),
@@ -64,6 +67,7 @@ export function createClinicalDependencies(
         prisma,
       ),
       anamnesisCompletionPolicy: new DefaultAnamnesisCompletionPolicy(),
+      evolutionFinalizationPolicy: new DefaultEvolutionFinalizationPolicy(),
       bodyMassIndexClassificationPolicy:
         new DefaultBodyMassIndexClassificationPolicy(),
       bodyCompositionConsistencyPolicy: new BodyCompositionConsistencyPolicy(),

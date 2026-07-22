@@ -490,6 +490,45 @@ Aprovado — Implementado (FEATURE-037)
 
 ---
 
+# ADR-0021
+
+## ClinicalEvolution como Aggregate Root Session-Bound com Significado Longitudinal (Model B)
+
+### Contexto
+
+FEATURE-038 introduz Evolução Clínica no módulo Clinical. O domínio Care define Evolução Clínica como registro cronológico do tratamento (`master_database` §13). O módulo Clinical adota aggregates independentes com clusters session-bound e patient-scoped (ADR-0016).
+
+### Decisão
+
+> **ClinicalEvolution is session-bound by registration context and longitudinal by clinical meaning.**
+
+`ClinicalEvolution` será implementado como **Aggregate Root independente**, cluster **session-bound**:
+
+- Relacionamento **obrigatório 1:1** com `ClinicalEncounter` em v1
+- Lifecycle: **`DRAFT → FINALIZED`** via **`finalize()`**; **`DRAFT → CANCELLED`** via **`cancel()`**
+- **`FINALIZED` imutável** para conteúdo; retificações futuras exigem novo registro (BACKLOG-013)
+- **`clinicalEncounterId` identifica onde a evolução foi registrada** — não reduz o aggregate a nota genérica da consulta
+- Conteúdo representa **delta intermomentos** desde a evolução finalizada anterior
+- Evolução anterior resolvida **query-side** — sem `previousClinicalEvolutionId` em v1
+- **`clinicalMomentAt`** = snapshot imutável de `encounter.startedAt` na criação; define cronologia clínica longitudinal (não `finalizedAt`)
+- Ordenação longitudinal: `clinicalMomentAt` → `clinicalEncounterId` → `finalizedAt` → `createdAt` → `id`
+- Finalização exige evidência de evolução (≥1 seção subjetiva/observação/resposta) **e** conclusão profissional (≥1 observação profissional/conduta)
+- **Não obrigatório** para `FinishClinicalEncounter` em v1
+- Sem FKs para objetivo, plano, prescrição ou evolução anterior
+
+### Justificativa
+
+- Preserva Model B: contexto de registro na sessão, significado clínico longitudinal
+- Evita linked list rígida e acoplamento prematuro
+- Protege integridade quando registros antigos são finalizados tardiamente
+- Alinha com ADR-0018 (`finalize()` distinto de `complete()`/`finish()`/`emit()`)
+
+### Status
+
+Aprovado — Proposto (FEATURE-038)
+
+---
+
 # Governança
 
 Toda nova decisão arquitetural deverá receber um novo ADR.

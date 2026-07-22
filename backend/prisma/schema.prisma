@@ -185,6 +185,7 @@ model Tenant {
   nutritionDiagnoses             NutritionDiagnosis[]
   mealPlans                      MealPlan[]
   prescriptions                  Prescription[]
+  clinicalEvolutions             ClinicalEvolution[]
 
   @@map("tenants")
 }
@@ -244,6 +245,8 @@ model Nutritionist {
   mealPlansResponsible          MealPlan[]           @relation("MealPlanResponsible")
   prescriptionsCreated          Prescription[]       @relation("PrescriptionCreatedBy")
   prescriptionsResponsible      Prescription[]       @relation("PrescriptionResponsible")
+  clinicalEvolutionsCreated     ClinicalEvolution[]  @relation("ClinicalEvolutionCreatedBy")
+  clinicalEvolutionsResponsible ClinicalEvolution[]  @relation("ClinicalEvolutionResponsible")
 
   @@unique([tenantId, crn])
   @@index([personId])
@@ -285,6 +288,7 @@ model Patient {
   nutritionDiagnoses         NutritionDiagnosis[]
   mealPlans                  MealPlan[]
   prescriptions              Prescription[]
+  clinicalEvolutions         ClinicalEvolution[]
 
   @@index([tenantId])
   @@map("patients")
@@ -369,6 +373,7 @@ model ClinicalEncounter {
   originNutritionDiagnoses NutritionDiagnosis[] @relation("NutritionDiagnosisOriginEncounter")
   originMealPlans          MealPlan[]           @relation("MealPlanOriginEncounter")
   originPrescriptions      Prescription[]       @relation("PrescriptionOriginEncounter")
+  clinicalEvolution      ClinicalEvolution?
 
   @@index([tenantId])
   @@index([patientId])
@@ -808,6 +813,45 @@ model PrescriptionLine {
 
   @@index([prescriptionId])
   @@map("prescription_lines")
+}
+
+enum ClinicalEvolutionStatus {
+  DRAFT
+  FINALIZED
+  CANCELLED
+}
+
+model ClinicalEvolution {
+  id                          String                   @id @default(uuid())
+  tenantId                    String                   @map("tenant_id")
+  patientId                   String                   @map("patient_id")
+  clinicalEncounterId         String                   @unique @map("clinical_encounter_id")
+  createdByNutritionistId     String                   @map("created_by_nutritionist_id")
+  responsibleNutritionistId   String                   @map("responsible_nutritionist_id")
+  status                      ClinicalEvolutionStatus    @default(DRAFT)
+  version                     Int                      @default(1)
+  clinicalMomentAt            DateTime                 @map("clinical_moment_at")
+  subjectiveEvolution         String?                  @map("subjective_evolution") @db.Text
+  professionalObservations    String?                  @map("professional_observations") @db.Text
+  treatmentResponse           String?                  @map("treatment_response") @db.Text
+  adherenceAndBarriers        String?                  @map("adherence_and_barriers") @db.Text
+  adverseEventsNotes          String?                  @map("adverse_events_notes") @db.Text
+  nextClinicalConsiderations  String?                  @map("next_clinical_considerations") @db.Text
+  finalizedAt                 DateTime?                @map("finalized_at")
+  cancelledAt                 DateTime?                @map("cancelled_at")
+  createdAt                   DateTime                 @default(now()) @map("created_at")
+  updatedAt                   DateTime                 @updatedAt @map("updated_at")
+  tenant                      Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient                     Patient                  @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  clinicalEncounter           ClinicalEncounter        @relation(fields: [clinicalEncounterId], references: [id], onDelete: Restrict)
+  createdByNutritionist       Nutritionist             @relation("ClinicalEvolutionCreatedBy", fields: [createdByNutritionistId], references: [id], onDelete: Restrict)
+  responsibleNutritionist     Nutritionist             @relation("ClinicalEvolutionResponsible", fields: [responsibleNutritionistId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, patientId])
+  @@index([tenantId, patientId, status])
+  @@index([tenantId, patientId, clinicalMomentAt])
+  @@map("clinical_evolutions")
 }
 
 enum PatientNutritionistAssignmentStatus {

@@ -74,6 +74,18 @@ import { FindPrescriptionHandler } from '../application/find-prescription/find-p
 import { FindPrescriptionsByPatientHandler } from '../application/find-prescriptions-by-patient/find-prescriptions-by-patient.handler.js';
 import { FindIssuedPrescriptionsByPatientHandler } from '../application/find-issued-prescriptions-by-patient/find-issued-prescriptions-by-patient.handler.js';
 import { FindLatestPrescriptionByPatientHandler } from '../application/find-latest-prescription-by-patient/find-latest-prescription-by-patient.handler.js';
+import { StartClinicalEvolutionHandler } from '../application/start-clinical-evolution/start-clinical-evolution.handler.js';
+import { EditClinicalEvolutionHandler } from '../application/edit-clinical-evolution/edit-clinical-evolution.handler.js';
+import { FinalizeClinicalEvolutionHandler } from '../application/finalize-clinical-evolution/finalize-clinical-evolution.handler.js';
+import { CancelClinicalEvolutionHandler } from '../application/cancel-clinical-evolution/cancel-clinical-evolution.handler.js';
+import { ChangeClinicalEvolutionResponsibleNutritionistHandler } from '../application/change-clinical-evolution-responsible-nutritionist/change-clinical-evolution-responsible-nutritionist.handler.js';
+import { FindClinicalEvolutionHandler } from '../application/find-clinical-evolution/find-clinical-evolution.handler.js';
+import { FindClinicalEvolutionByEncounterHandler } from '../application/find-clinical-evolution-by-encounter/find-clinical-evolution-by-encounter.handler.js';
+import { FindClinicalEvolutionsByPatientHandler } from '../application/find-clinical-evolutions-by-patient/find-clinical-evolutions-by-patient.handler.js';
+import { FindLatestFinalizedClinicalEvolutionByPatientHandler } from '../application/find-latest-finalized-clinical-evolution-by-patient/find-latest-finalized-clinical-evolution-by-patient.handler.js';
+import { FindPreviousFinalizedClinicalEvolutionHandler } from '../application/find-previous-finalized-clinical-evolution/find-previous-finalized-clinical-evolution.handler.js';
+import type { ClinicalEvolutionRepository } from '../domain/repositories/clinical-evolution-repository.js';
+import type { EvolutionFinalizationPolicy } from '../domain/policies/evolution-finalization-policy.js';
 
 export interface ClinicalFactoryDependencies {
   encounterRepository: ClinicalEncounterRepository;
@@ -84,6 +96,7 @@ export interface ClinicalFactoryDependencies {
   nutritionDiagnosisRepository: NutritionDiagnosisRepository;
   mealPlanRepository: MealPlanRepository;
   prescriptionRepository: PrescriptionRepository;
+  clinicalEvolutionRepository: ClinicalEvolutionRepository;
   anthropometricAssessmentDirectory: AnthropometricAssessmentDirectoryPort;
   tenantDirectory: TenantDirectoryPort;
   patientDirectory: PatientDirectoryPort;
@@ -93,6 +106,7 @@ export interface ClinicalFactoryDependencies {
   anamnesisDirectory: AnamnesisDirectoryPort;
   patientClinicalDirectory: PatientClinicalDirectoryPort;
   anamnesisCompletionPolicy: AnamnesisCompletionPolicy;
+  evolutionFinalizationPolicy: EvolutionFinalizationPolicy;
   bodyMassIndexClassificationPolicy: BodyMassIndexClassificationPolicy;
   bodyCompositionConsistencyPolicy: BodyCompositionConsistencyPolicy;
   clock: Clock;
@@ -155,6 +169,16 @@ export interface ClinicalHandlers {
   findPrescriptionsByPatientHandler: FindPrescriptionsByPatientHandler;
   findIssuedPrescriptionsByPatientHandler: FindIssuedPrescriptionsByPatientHandler;
   findLatestPrescriptionByPatientHandler: FindLatestPrescriptionByPatientHandler;
+  startClinicalEvolutionHandler: StartClinicalEvolutionHandler;
+  editClinicalEvolutionHandler: EditClinicalEvolutionHandler;
+  finalizeClinicalEvolutionHandler: FinalizeClinicalEvolutionHandler;
+  cancelClinicalEvolutionHandler: CancelClinicalEvolutionHandler;
+  changeClinicalEvolutionResponsibleNutritionistHandler: ChangeClinicalEvolutionResponsibleNutritionistHandler;
+  findClinicalEvolutionHandler: FindClinicalEvolutionHandler;
+  findClinicalEvolutionByEncounterHandler: FindClinicalEvolutionByEncounterHandler;
+  findClinicalEvolutionsByPatientHandler: FindClinicalEvolutionsByPatientHandler;
+  findLatestFinalizedClinicalEvolutionByPatientHandler: FindLatestFinalizedClinicalEvolutionByPatientHandler;
+  findPreviousFinalizedClinicalEvolutionHandler: FindPreviousFinalizedClinicalEvolutionHandler;
 }
 
 export function createClinicalHandlers(
@@ -434,5 +458,53 @@ export function createClinicalHandlers(
     findLatestPrescriptionByPatientHandler: new FindLatestPrescriptionByPatientHandler(
       deps.prescriptionRepository,
     ),
+    startClinicalEvolutionHandler: new StartClinicalEvolutionHandler(
+      deps.clinicalEvolutionRepository,
+      deps.encounterRepository,
+      deps.tenantDirectory,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    editClinicalEvolutionHandler: new EditClinicalEvolutionHandler(
+      deps.clinicalEvolutionRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    finalizeClinicalEvolutionHandler: new FinalizeClinicalEvolutionHandler(
+      deps.clinicalEvolutionRepository,
+      deps.clinicalEncounterDirectory,
+      deps.evolutionFinalizationPolicy,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    cancelClinicalEvolutionHandler: new CancelClinicalEvolutionHandler(
+      deps.clinicalEvolutionRepository,
+      deps.clock,
+      deps.eventDispatcher,
+    ),
+    changeClinicalEvolutionResponsibleNutritionistHandler:
+      new ChangeClinicalEvolutionResponsibleNutritionistHandler(
+        deps.clinicalEvolutionRepository,
+        deps.nutritionistDirectory,
+        deps.clock,
+        deps.eventDispatcher,
+      ),
+    findClinicalEvolutionHandler: new FindClinicalEvolutionHandler(
+      deps.clinicalEvolutionRepository,
+    ),
+    findClinicalEvolutionByEncounterHandler: new FindClinicalEvolutionByEncounterHandler(
+      deps.clinicalEvolutionRepository,
+    ),
+    findClinicalEvolutionsByPatientHandler: new FindClinicalEvolutionsByPatientHandler(
+      deps.clinicalEvolutionRepository,
+    ),
+    findLatestFinalizedClinicalEvolutionByPatientHandler:
+      new FindLatestFinalizedClinicalEvolutionByPatientHandler(
+        deps.clinicalEvolutionRepository,
+      ),
+    findPreviousFinalizedClinicalEvolutionHandler:
+      new FindPreviousFinalizedClinicalEvolutionHandler(
+        deps.clinicalEvolutionRepository,
+      ),
   };
 }
