@@ -525,7 +525,7 @@ FEATURE-038 introduz Evolução Clínica no módulo Clinical. O domínio Care de
 
 ### Status
 
-Aprovado — Proposto (FEATURE-038)
+Aprovado — Implementado (FEATURE-038)
 
 ---
 

@@ -216,15 +216,11 @@ Care
 
 ↓
 
-ConsultaApplicationService
+StartClinicalEncounter (Command)
 
 ↓
 
-FinalizarConsulta
-
-↓
-
-Prontuário Aggregate
+ClinicalEncounter Aggregate
 
 ---
 

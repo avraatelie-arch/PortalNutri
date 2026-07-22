@@ -677,28 +677,72 @@ Elas deverão permanecer desacopladas das Pessoas, sendo concedidas por meio dos
 
 O Prontuário representa o conjunto organizado de informações clínicas produzidas dentro de um Vínculo Clínico.
 
-## Responsabilidade
+> **Modelo de persistência implementado (FEATURE-039):** o Prontuário **não é uma tabela nem um Aggregate Root de escrita**. Registros clínicos são persistidos por múltiplos Aggregate Roots independentes (ver §10.1). A visão unificada será composta query-side por **ClinicalChart** (ADR-0019; FEATURE-040).
+
+## Responsabilidade (conceito de negócio)
 
 O Prontuário deverá organizar:
 
-- Objetivos Clínicos.
-- Consultas.
-- Avaliações Nutricionais.
-- Evoluções Clínicas.
-- Protocolos Aplicados.
-- Planos Alimentares.
-- Prescrições Nutricionais.
-- Solicitações de Exames.
-- Resultados de Exames.
-- Indicadores Clínicos.
+- Objetivos Clínicos (`ClinicalObjective`).
+- Encontros Clínicos (`ClinicalEncounter`) e Agendamentos (`Appointment`).
+- Avaliações Nutricionais (`Anamnesis`, medidas antropométricas, composição corporal).
+- Diagnósticos Nutricionais (`NutritionDiagnosis`).
+- Evoluções Clínicas (`ClinicalEvolution`).
+- Acompanhamentos de Resultado (`OutcomeTracking`).
+- Protocolos Aplicados *(não implementado)*.
+- Planos Alimentares (`MealPlan` + `MealPlanMeal`).
+- Prescrições Nutricionais (`Prescription` + `PrescriptionLine`).
+- Solicitações e Resultados de Exames *(não implementado)*.
+- Indicadores Clínicos *(não implementado como aggregate standalone)*.
 
 ## Relação com o Vínculo Clínico
 
-Todo Prontuário deverá estar vinculado a um Vínculo Clínico válido.
+Todo registro clínico deverá pertencer a um Vínculo Clínico válido (`tenantId` + `patientId` + profissional responsável).
 
 ## Princípio Fundamental
 
-O Prontuário é o centro organizador da jornada clínica do Paciente dentro de um Vínculo Clínico.
+O Prontuário é o centro organizador **conceitual** da jornada clínica. Na implementação, a consistência transacional reside nos Aggregate Roots individuais; a composição visual e analítica reside no read model **ClinicalChart**.
+
+---
+
+# 10.1. Persistência do Modelo Clínico Implementado
+
+Esta seção descreve o mapeamento Prisma dos Aggregate Roots implementados até FEATURE-039. Não replica o schema completo — consultar `backend/prisma/schema.prisma`.
+
+## Tabelas Aggregate Root (módulo clinical)
+
+| Modelo Prisma | Aggregate Root | Cluster |
+|---------------|---------------|---------|
+| `clinical_encounters` | ClinicalEncounter | session-bound |
+| `anamneses` | Anamnesis | session-bound |
+| `anthropometric_assessments` | AnthropometricAssessment | session-bound |
+| `body_composition_assessments` | BodyCompositionAssessment | session-bound |
+| `clinical_evolutions` | ClinicalEvolution | session-bound |
+| `nutrition_diagnoses` | NutritionDiagnosis | patient-scoped |
+| `clinical_objectives` | ClinicalObjective | patient-scoped |
+| `meal_plans` | MealPlan | patient-scoped |
+| `prescriptions` | Prescription | patient-scoped |
+| `outcome_trackings` | OutcomeTracking | patient-scoped |
+
+## Entidades subordinadas (child tables)
+
+| Modelo Prisma | Pertence a | Cascade |
+|---------------|-----------|---------|
+| `meal_plan_meals` | MealPlan | delete cascade |
+| `prescription_lines` | Prescription | delete cascade |
+
+## OutcomeTracking — ausência de evidências no write model
+
+Conforme ADR-0022: a tabela `outcome_trackings` persiste julgamento clínico (`outcome_assessment`, `adherence_factor`, textos profissionais, cronologia). **Não possui colunas de referência a evidências** — composição query-side deferida (BACKLOG-017).
+
+## Módulos satélite Care BC
+
+| Modelo Prisma | Módulo | Aggregate Root |
+|---------------|--------|---------------|
+| `patients` | patient | Patient |
+| `patient_nutritionist_assignments` | patient | PatientNutritionistAssignment |
+| `nutritionists` | nutrition | Nutritionist |
+| `appointments` | appointment | Appointment |
 
 ---
 

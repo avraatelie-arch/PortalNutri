@@ -2,9 +2,11 @@
 
 # Master Bounded Contexts
 
-**Versão:** 1.0
+**Versão:** 1.1
 
 **Status:** Documento Mestre de Bounded Contexts
+
+**Última reconciliação arquitetural:** 2026-07-22 (pós FEATURE-039)
 
 ---
 
@@ -114,19 +116,23 @@ Este Contexto administra:
 
 Responsável por toda a jornada clínica do paciente.
 
-Este Contexto administra:
+Este Contexto administra (conceitualmente):
 
-- Prontuário
-- Objetivos Clínicos
-- Consultas
-- Avaliações Nutricionais
-- Evoluções Clínicas
-- Protocolos Aplicados
-- Planos Alimentares
-- Prescrições Nutricionais
-- Solicitações de Exames
-- Resultados de Exames
-- Indicadores Clínicos
+- Prontuário (visão de negócio — composta query-side por ClinicalChart; ADR-0019)
+- Objetivos Clínicos (`ClinicalObjective`)
+- Consultas / Encontros Clínicos (`ClinicalEncounter`; distinto de `Appointment`)
+- Avaliações Nutricionais (`Anamnesis`, `AnthropometricAssessment`, `BodyCompositionAssessment`)
+- Diagnósticos Nutricionais (`NutritionDiagnosis`)
+- Evoluções Clínicas (`ClinicalEvolution`)
+- Acompanhamento de Resultados (`OutcomeTracking`)
+- Protocolos Aplicados *(não implementado)*
+- Planos Alimentares (`MealPlan`)
+- Prescrições Nutricionais (`Prescription`)
+- Solicitações de Exames *(não implementado)*
+- Resultados de Exames *(não implementado)*
+- Indicadores Clínicos *(não implementado como aggregate standalone)*
+
+**Implementação física:** ver §08. Os módulos `clinical/`, `patient/`, `nutrition/` e `appointment/` são **módulos físicos dentro da implementação atual do Care BC** — não Bounded Contexts independentes.
 
 ---
 
@@ -260,21 +266,26 @@ Nenhum outro Contexto poderá alterar essas informações diretamente.
 
 É o único Contexto responsável pela jornada clínica.
 
-É proprietário de:
+É proprietário de (implementados até FEATURE-039):
 
-- Prontuário
-- Objetivo Clínico
-- Consulta
-- Avaliação Nutricional
-- Evolução Clínica
-- Protocolo Aplicado
-- Plano Alimentar
-- Prescrição Nutricional
-- Solicitação de Exame
-- Resultado de Exame
-- Indicador Clínico
+- Objetivo Clínico (`ClinicalObjective`)
+- Encontro Clínico (`ClinicalEncounter`)
+- Anamnese (`Anamnesis`)
+- Avaliações Antropométrica e de Composição Corporal
+- Diagnóstico Nutricional (`NutritionDiagnosis`)
+- Evolução Clínica (`ClinicalEvolution`)
+- Acompanhamento de Resultado (`OutcomeTracking`)
+- Plano Alimentar (`MealPlan`)
+- Prescrição Nutricional (`Prescription`)
+- Paciente e vínculo clínico (`Patient`, `PatientNutritionistAssignment`)
+- Nutricionista (`Nutritionist`)
+- Agendamento (`Appointment`)
+
+**Prontuário / ClinicalChart:** o termo Prontuário permanece na linguagem de negócio. A visão unificada será composta query-side por **ClinicalChart** (read model — ADR-0019; FEATURE-040). Não existe Aggregate Root de escrita `Prontuário`.
 
 Nenhum outro Contexto poderá alterar informações clínicas diretamente.
+
+> **Implementação física (não confundir com BCs):** `clinical/`, `patient/`, `nutrition/` e `appointment/` são módulos de código dentro do **mesmo** Bounded Context Care. Eles organizam o código por responsabilidade técnica, mas **não** representam Bounded Contexts oficiais separados. Ver §08.
 
 ---
 
@@ -593,18 +604,21 @@ Os seguintes conceitos possuem significado único em toda a plataforma:
 - Vínculo
 - Tenant
 - Unidade Organizacional
-- Prontuário
-- Objetivo Clínico
-- Consulta
-- Avaliação Nutricional
-- Evolução Clínica
+- Prontuário (visão de negócio; composição query-side via ClinicalChart)
+- Objetivo Clínico (`ClinicalObjective`)
+- Encontro Clínico (`ClinicalEncounter`)
+- Avaliação Nutricional (`Anamnesis`, medidas antropométricas, composição corporal)
+- Diagnóstico Nutricional (`NutritionDiagnosis`)
+- Evolução Clínica (`ClinicalEvolution`)
+- Acompanhamento de Resultado (`OutcomeTracking`)
 - Protocolo Modelo
 - Protocolo Aplicado
-- Plano Alimentar
-- Prescrição Nutricional
+- Plano Alimentar (`MealPlan`)
+- Prescrição Nutricional (`Prescription`)
 - Solicitação de Exame
 - Resultado de Exame
 - Indicador Clínico
+- Agendamento (`Appointment`)
 - Produto
 - Serviço
 - Pedido
@@ -770,4 +784,50 @@ Sua implementação deverá observar obrigatoriamente:
 - master_architecture.md
 
 Nenhuma implementação poderá violar os limites definidos neste documento.
+
+---
+
+# 08. Decomposição Física do Care BC (Implementação)
+
+O Bounded Context **Care** possui um único proprietário conceitual e um único limite de negócio. Na implementação atual do backend, esse contexto está **distribuído em módulos físicos de código** — não em Bounded Contexts adicionais.
+
+## Princípio explícito
+
+Os diretórios abaixo são **módulos físicos dentro da implementação do Care BC**. Eles **não** são Bounded Contexts independentes, **não** possuem limites de negócio próprios e **não** devem ser tratados como contextos delimitados separados na documentação ou na governança arquitetural.
+
+| Módulo físico | Papel dentro do Care BC | É Bounded Context? |
+|---------------|-------------------------|--------------------|
+| `clinical/` | Núcleo de escrita clínica — 10 Aggregate Roots | **Não** — módulo físico |
+| `patient/` | Cadastro e vínculo clínico do paciente | **Não** — módulo físico |
+| `nutrition/` | Perfil profissional do nutricionista | **Não** — módulo físico |
+| `appointment/` | Agendamento operacional | **Não** — módulo físico |
+
+A existência desses módulos **não altera** o mapa oficial de Bounded Contexts (§01). O Care BC continua sendo **um único** contexto delimitado.
+
+## Mapa módulo → responsabilidade
+
+```text
+Care BC (conceitual — um único Bounded Context)
+├── clinical/     → módulo físico: 10 Aggregate Roots de escrita clínica
+├── patient/      → módulo físico: Patient, PatientNutritionistAssignment
+├── nutrition/    → módulo físico: Nutritionist
+└── appointment/  → módulo físico: Appointment
+```
+
+O diretório `care/` existe como placeholder estrutural; a lógica clínica reside em `clinical/`.
+
+## Anti-corruption entre módulos
+
+O módulo `clinical/` consome dados de `patient/`, `nutrition/` e `appointment/` exclusivamente via **directory ports** na camada de aplicação:
+
+- `TenantDirectoryPort`, `PatientDirectoryPort`, `PatientClinicalDirectoryPort`
+- `NutritionistDirectoryPort`, `AppointmentDirectoryPort`
+- `ClinicalEncounterDirectoryPort`, `AnamnesisDirectoryPort`
+- `AnthropometricAssessmentDirectoryPort`
+
+Implementações Prisma em `clinical/infrastructure/adapters/`. **Nenhum import de domínio cross-módulo.**
+
+## ClinicalChart (próxima fase)
+
+Read model query-side (ADR-0019; FEATURE-040; BACKLOG-007). Comporá timeline clínica a partir de query handlers existentes. **Não é Aggregate Root.**
 

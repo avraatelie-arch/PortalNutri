@@ -2,9 +2,11 @@
 
 # Master Aggregates
 
-**Versão:** 1.0
+**Versão:** 1.1
 
 **Status:** Documento Mestre de Aggregates
+
+**Última reconciliação arquitetural:** 2026-07-22 (pós FEATURE-039)
 
 ---
 
@@ -99,13 +101,21 @@ Ele representa o núcleo da autenticação, autorização e relacionamentos entr
 
 ## Aggregates do Contexto IAM
 
-O Contexto IAM poderá possuir múltiplos Aggregates:
+O Contexto IAM possui os seguintes Aggregates **implementados**:
 
-- Pessoa
-- Tenant
+- **Person** (`Person`)
+- **Tenant** (`Tenant`)
+- **Membership** (`Membership` — Vínculo)
+- **Credential** (`Credential`)
+- **Session** (`Session`)
+- **Role** (`Role`)
+- **RoleAssignment** (`RoleAssignment`)
+- **Permission** (`Permission`)
+- **PermissionAssignment** (`PermissionAssignment`)
+
+Aggregates **ainda não implementados**:
+
 - Unidade Organizacional
-- Vínculo
-- Permissão
 
 ---
 
@@ -162,96 +172,154 @@ Nenhuma alteração poderá violar as regras de identidade definidas pelo domín
 
 ---
 
-# 04. Aggregate Care
+# 04. Bounded Context Care — Modelo de Escrita Multi-Aggregate
 
-O Aggregate Care representa toda a jornada clínica do paciente.
+O Bounded Context **Care** representa toda a jornada clínica do paciente.
 
-Este é o Aggregate mais importante do PortalNutri.
+A versão 1.0 deste documento descrevia um único Aggregate Root `Prontuário` englobando todas as entidades clínicas. **Esse modelo foi superseded** pelas decisões ADR-0016 a ADR-0022 e pela implementação concluída até FEATURE-039.
 
-Toda informação clínica deverá permanecer protegida por este Aggregate.
+## Supersessão do modelo monolítico
+
+| Conceito legado (v1.0) | Modelo atual (implementado) |
+|------------------------|----------------------------|
+| `Prontuário` como Aggregate Root de escrita | **Não implementado** como AR de escrita |
+| Prontuário englobando todas as entidades | Múltiplos Aggregate Roots independentes no módulo `clinical/` |
+| Visão unificada do prontuário | `ClinicalChart` — **Read Model query-side** (ADR-0019; FEATURE-040; não implementado) |
+
+> **`ClinicalChart` não é Aggregate Root.** É um compositor de leitura que agregará timeline clínica a partir de queries sobre os aggregates de escrita existentes. Não possui commands, lifecycle próprio ou persistência independente.
 
 ---
 
-## Aggregate Root
+## Implementação física do Care BC
 
-Prontuário
+O Care BC é implementado em módulos físicos que **não representam Bounded Contexts independentes**:
+
+| Módulo | Aggregates implementados | Papel |
+|--------|---------------------------|-------|
+| `clinical/` | 10 ARs clínicos (ver abaixo) | Núcleo do modelo de escrita clínico |
+| `patient/` | `Patient`, `PatientNutritionistAssignment` | Cadastro e vínculo clínico do paciente |
+| `nutrition/` | `Nutritionist` | Perfil profissional do nutricionista |
+| `appointment/` | `Appointment` | Agendamento operacional (pré-sessão) |
+
+Comunicação cross-módulo ocorre via **directory ports** (anti-corruption layer) na camada de aplicação — nunca via acesso direto ao domínio de outro módulo.
 
 ---
 
-## Entidades pertencentes
+## Clusters de Aggregate Roots (ADR-0016)
 
-- Objetivo Clínico
-- Consulta
-- Avaliação Nutricional
-- Evolução Clínica
+### Cluster session-bound (vinculados à sessão clínica)
+
+Registros cujo contexto de registro está ancorado a um `ClinicalEncounter` (Encontro Clínico / Consulta em curso).
+
+| Aggregate Root | Termo de negócio (PT) | Lifecycle | Responsabilidade |
+|----------------|----------------------|-----------|------------------|
+| **ClinicalEncounter** | Encontro Clínico / Consulta em curso | `OPEN → FINISHED \| CANCELLED` | Ancora a sessão clínica; registra notas clínicas |
+| **Anamnesis** | Anamnese | `DRAFT → COMPLETED` | Coleta estruturada por seções durante a sessão |
+| **AnthropometricAssessment** | Avaliação Antropométrica | Registro imutável (`record`) | Medidas antropométricas; classificação IMC via policy |
+| **BodyCompositionAssessment** | Avaliação de Composição Corporal | Registro imutável (`record`) | Composição corporal; consistência via policy |
+| **ClinicalEvolution** | Evolução Clínica | `DRAFT → FINALIZED \| CANCELLED` | Narrativa longitudinal intermomentos (Model B — ADR-0021) |
+
+**ClinicalEvolution** descreve e narra a mudança clínica. Conteúdo `FINALIZED` é imutável; retificações futuras exigem novo registro (BACKLOG-013).
+
+### Cluster patient-scoped (escopo do paciente)
+
+Registros de acompanhamento longitudinal independentes de uma sessão específica.
+
+| Aggregate Root | Termo de negócio (PT) | Lifecycle | Responsabilidade |
+|----------------|----------------------|-----------|------------------|
+| **NutritionDiagnosis** | Diagnóstico Nutricional | `DRAFT → CONFIRMED \| CANCELLED` | Diagnóstico nutricional estruturado |
+| **ClinicalObjective** | Objetivo Clínico | `DRAFT → ACTIVE ⇄ PAUSED → COMPLETED \| CANCELLED` | Meta terapêutica com critérios de sucesso |
+| **MealPlan** | Plano Alimentar | `DRAFT → ACTIVE \| CANCELLED` | Estratégia alimentar prática |
+| **Prescription** | Prescrição Nutricional | `DRAFT → ISSUED \| CANCELLED` | Instruções terapêuticas emitidas (`emit()`) |
+| **OutcomeTracking** | Acompanhamento de Resultado | `DRAFT → RECORDED \| CANCELLED` | Julgamento clínico estruturado sobre progresso (ADR-0022) |
+
+**OutcomeTracking** avalia progresso em direção a um `ClinicalObjective`. `GOAL_ACHIEVED` é um valor de `OutcomeAssessment` — **não completa automaticamente** o `ClinicalObjective` e **não dispara writes cross-aggregate**.
+
+---
+
+## Entidades subordinadas (não são Aggregate Roots)
+
+| Entidade | Pertence a | Descrição |
+|----------|-----------|-----------|
+| **MealPlanMeal** | `MealPlan` | Refeição individual dentro de um plano alimentar |
+| **PrescriptionLine** | `Prescription` | Linha de instrução terapêutica dentro de uma prescrição |
+
+Entidades subordinadas só são modificadas através da Aggregate Root pai.
+
+---
+
+## Aggregates relacionados (módulos satélite do Care BC)
+
+| Módulo | Aggregate Root | Lifecycle | Responsabilidade |
+|--------|---------------|-----------|------------------|
+| `patient/` | **Patient** | `ACTIVE \| INACTIVE` | Identidade clínica do paciente no tenant |
+| `patient/` | **PatientNutritionistAssignment** | `ACTIVE \| REMOVED` | Vínculo paciente–nutricionista |
+| `nutrition/` | **Nutritionist** | `ACTIVE \| INACTIVE` | Perfil profissional do nutricionista |
+| `appointment/` | **Appointment** | `SCHEDULED → CONFIRMED → COMPLETED \| CANCELLED \| NO_SHOW` | Agendamento operacional |
+
+### Appointment vs ClinicalEncounter
+
+| Conceito | Aggregate | Papel |
+|----------|-----------|-------|
+| **Appointment** | `appointment/` | Agendamento administrativo/operacional (pré-atendimento) |
+| **ClinicalEncounter** | `clinical/` | Sessão clínica em curso ou finalizada (atendimento propriamente dito) |
+
+São aggregates distintos com lifecycles e responsabilidades separadas.
+
+---
+
+## ClinicalChart — Read Model (não implementado)
+
+Conforme ADR-0019:
+
+- **Tipo:** compositor query-side / read model
+- **Feature planejada:** FEATURE-040
+- **Backlog:** BACKLOG-007
+- **Persistência:** nenhuma tabela própria; compõe dados de queries existentes
+- **Responsabilidade:** timeline clínica unificada para UI, relatórios e contexto de IA
+
+---
+
+## Regras de consistência (modelo multi-aggregate)
+
+- Todo registro clínico pertence a um `tenantId` e `patientId` válidos.
+- Registros session-bound referenciam `clinicalEncounterId` quando aplicável (obrigatório em v1 para `ClinicalEvolution`).
+- Registros patient-scoped referenciam `clinicalObjectiveId` quando aplicável (obrigatório para `OutcomeTracking`).
+- Proveniência opcional: `originClinicalEncounterId`, `originAnamnesisId`.
+- Um Caso de Uso modifica **apenas um Aggregate Root por transação** (ADR-0016).
+- Colaboração entre aggregates ocorre via validação read-only (directory ports) ou Eventos de Domínio — nunca via mutação direta cross-aggregate.
+- Registros publicados (`COMPLETED`, `FINALIZED`, `RECORDED`, `ISSUED`, `ACTIVE`) são imutáveis conforme ADR-0017.
+
+---
+
+## Eventos normalmente publicados (aggregates implementados)
+
+**ClinicalEncounter:** Started, Finished, Cancelled, NotesUpdated
+
+**Anamnesis:** Started, SectionUpdated, Completed
+
+**AnthropometricAssessment / BodyCompositionAssessment:** Recorded
+
+**ClinicalEvolution:** Started, Updated, Finalized, Cancelled, ResponsibleNutritionistChanged
+
+**ClinicalObjective:** Created, Activated, Paused, Resumed, Completed, Cancelled, Updated, ResponsibleNutritionistChanged
+
+**NutritionDiagnosis:** Created, Updated, Confirmed, Cancelled, ResponsibleNutritionistChanged
+
+**MealPlan:** Created, Updated, Activated, Cancelled, ResponsibleNutritionistChanged
+
+**Prescription:** Created, Updated, Issued, Cancelled, ResponsibleNutritionistChanged
+
+**OutcomeTracking:** Started, Updated, Recorded, Cancelled, ResponsibleNutritionistChanged
+
+---
+
+## Conceitos Care ainda não implementados
+
 - Protocolo Aplicado
-- Plano Alimentar
-- Prescrição Nutricional
-- Solicitação de Exame
-- Resultado de Exame
-- Indicador Clínico
-
----
-
-## Responsabilidades
-
-O Aggregate Care é responsável por:
-
-- iniciar acompanhamentos;
-- registrar consultas;
-- controlar objetivos clínicos;
-- registrar avaliações;
-- registrar evoluções;
-- aplicar Protocolos Modelo;
-- publicar Planos Alimentares;
-- emitir Prescrições;
-- controlar Exames;
-- atualizar Indicadores Clínicos.
-
----
-
-## Regras de Consistência
-
-Todo Prontuário deverá pertencer a um Vínculo Clínico válido.
-
-Toda Consulta deverá estar vinculada a um Prontuário.
-
-Toda Evolução Clínica deverá estar vinculada a uma Consulta.
-
-Todo Plano Alimentar deverá pertencer ao Prontuário.
-
-Toda Prescrição deverá possuir profissional responsável.
-
-Todo Resultado de Exame deverá permanecer associado ao respectivo Prontuário.
-
-Indicadores Clínicos deverão permanecer historicamente preservados.
-
-Nenhuma informação clínica poderá ser alterada diretamente por outro Aggregate.
-
----
-
-## Eventos normalmente publicados
-
-- Prontuário Criado
-- Objetivo Clínico Definido
-- Objetivo Clínico Atualizado
-- Objetivo Clínico Concluído
-- Consulta Agendada
-- Consulta Reagendada
-- Consulta Cancelada
-- Consulta Iniciada
-- Consulta Finalizada
-- Avaliação Nutricional Registrada
-- Evolução Clínica Registrada
-- Protocolo Aplicado
-- Plano Alimentar Publicado
-- Plano Alimentar Atualizado
-- Prescrição Nutricional Emitida
-- Prescrição Nutricional Atualizada
-- Solicitação de Exame Emitida
-- Resultado de Exame Recebido
-- Resultado de Exame Validado
-- Indicador Clínico Atualizado
+- Solicitação de Exame / Resultado de Exame
+- Indicador Clínico (como aggregate standalone)
+- ClinicalChart (read model — FEATURE-040)
 
 ---
 
@@ -266,9 +334,9 @@ Nenhuma informação clínica poderá ser alterada diretamente por outro Aggrega
 
 ## Princípio Fundamental
 
-Toda informação clínica do PortalNutri deverá nascer, evoluir e permanecer protegida dentro do Aggregate Care.
+Toda informação clínica do PortalNutri nasce, evolui e permanece protegida dentro dos Aggregate Roots do Bounded Context Care.
 
-Nenhum outro Aggregate poderá alterar diretamente qualquer informação clínica.
+Nenhum outro Bounded Context poderá alterar diretamente qualquer registro clínico. A visão unificada do prontuário será composta query-side por `ClinicalChart`, nunca por um aggregate monolítico de escrita.
 
 # 05. Aggregate Marketplace
 

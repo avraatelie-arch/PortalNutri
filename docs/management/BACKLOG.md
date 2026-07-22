@@ -56,9 +56,9 @@ Backlog de features do PortalNutri Platform. Atualizado conforme evolução do d
 | IAM | Authorization Engine | P1 | ⏳ Backlog | Permissões |
 | IAM | Autenticação (registro, login, JWT) | P1 | ⏳ Backlog | Person, Permissões |
 | IAM | Telas login/cadastro (frontend) | P2 | ⏳ Backlog | Autenticação |
-| Care | Aggregate Prontuário | P2 | 📋 Proposto | IAM completo |
-| Care | Criar Prontuário | P2 | 📋 Proposto | Aggregate Prontuário |
-| Care | Agendar Consulta | P2 | 📋 Proposto | Prontuário |
+| Care | Aggregate Prontuário (write model) | P2 | 📋 Superseded | Substituído por modelo multi-aggregate (ADR-0016–0022); ver ClinicalChart (BACKLOG-007) |
+| Care | ClinicalChart read model | P1 | ⏳ Backlog | BACKLOG-007; ADR-0019; FEATURE-040 |
+| Care | Agendar Consulta | P2 | ✅ Concluído | `Appointment` + `ClinicalEncounter` implementados |
 | Marketplace | Aggregate Loja | P3 | 📋 Proposto | Tenant |
 | Marketplace | Publicar Produto | P3 | 📋 Proposto | Loja |
 | Business | Contratar Assinatura | P3 | 📋 Proposto | Tenant |
@@ -75,6 +75,7 @@ Backlog de features do PortalNutri Platform. Atualizado conforme evolução do d
 | ID | Item | Prioridade | Status | Contexto |
 |----|------|------------|--------|----------|
 | BACKLOG-001 | Implement optimistic concurrency using version-based updates in Prisma repositories | P1 | ⏳ Backlog | Identificado na revisão de FEATURE-034; `ClinicalObjective` e demais aggregates com campo `version` fazem upsert sem guard `WHERE version = expected`, permitindo lost updates em concorrência |
+| BACKLOG-007 | ClinicalChart read model — compositor query-side de timeline clínica do paciente | P1 | ⏳ Backlog | ADR-0019; FEATURE-040; compõe dados de queries existentes; **não é Aggregate Root**; evidências query-side (BACKLOG-017) |
 | BACKLOG-002 | Validate patient ↔ responsible nutritionist assignment when the care-team model is introduced | P2 | ⏳ Backlog | Identificado na revisão de FEATURE-034; `ChangeClinicalObjectiveResponsibleNutritionist` valida nutritionist ativo no tenant, mas não exige vínculo patient–nutritionist até o modelo de care team estar definido |
 | BACKLOG-003 | Integration test database isolation | P1 | ⏳ Backlog | Identificado na validação de FEATURE-036; execuções concorrentes de testes de integração compartilham e corrompem fixture state — avaliar databases isolados, schemas por worker, execução serializada ou identidades de fixture únicas |
 | BACKLOG-004 | Stable MealPlanMeal identities | P2 | ⏳ Backlog | Identificado na revisão de FEATURE-036; persistência replace-all recria registros de refeições em edições DRAFT — aceitável em v1, mas deve ser revisitado antes de HTTP clients, mobile apps ou integrações reterem meal IDs individuais |

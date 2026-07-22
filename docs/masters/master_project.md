@@ -110,6 +110,30 @@ Toda nova funcionalidade deverá obrigatoriamente pertencer a um Bounded Context
 
 ---
 
+## Roadmap de Evolução (estado atual)
+
+Visão de alto nível da sequência de capacidades da plataforma:
+
+```text
+Foundation
+    ↓
+Clinical Write Model
+    ↓
+Clinical Read Model
+    ↓
+HTTP API
+    ↓
+Frontend
+    ↓
+AI
+    ↓
+Marketplace
+```
+
+**Estado em 2026-07-22:** Foundation e Clinical Write Model concluídos (commit `f4a9502`). Clinical Read Model (`ClinicalChart`; ADR-0019; BACKLOG-007) é a próxima fase. Demais etapas ainda não iniciadas.
+
+---
+
 ## PortalNutri IAM
 
 Responsável pela gestão das identidades, papéis, vínculos, permissões e organizações da plataforma.
@@ -118,7 +142,9 @@ Responsável pela gestão das identidades, papéis, vínculos, permissões e org
 
 ## PortalNutri Care
 
-Responsável por toda a jornada clínica e assistencial do paciente, abrangendo prontuários, consultas, planos alimentares, exames e evolução clínica.
+Responsável por toda a jornada clínica e assistencial do paciente.
+
+**Implementação atual (FEATURE-039):** modelo multi-aggregate distribuído nos módulos `clinical/`, `patient/`, `nutrition/` e `appointment/`. Visão unificada do prontuário será composta query-side por **ClinicalChart** (FEATURE-040; ADR-0019).
 
 ---
 

@@ -638,24 +638,74 @@ A criação de um novo contexto deverá ocorrer apenas quando existir:
 
 ## Organização Física
 
-A implementação dos Bounded Contexts deverá refletir diretamente a organização do código.
+A implementação dos Bounded Contexts deverá refletir a organização do código, preservando autonomia, baixo acoplamento e independência evolutiva.
 
-Estrutura oficial:
+**Estado implementado (2026-07-22, pós FEATURE-039):**
 
 ```text
-src/
+backend/src/
+├── bootstrap/          → composição da aplicação, registro de módulos, health
+├── config/             → variáveis de ambiente, metadata
+├── core/               → event bus, audit, prisma client, utilitários transversais
 └── modules/
-    ├── iam/
-    ├── care/
-    ├── marketplace/
-    ├── business/
-    ├── ai/
-    ├── communication/
-    ├── analytics/
-    └── platform/
+    ├── iam/            → IAM BC (implementado)
+    ├── clinical/       → núcleo Care BC — 10 ARs de escrita clínica
+    ├── patient/        → Care BC — cadastro e vínculo clínico
+    ├── nutrition/      → Care BC — perfil profissional
+    ├── appointment/    → Care BC — agendamento operacional
+    ├── care/           → placeholder (lógica em clinical/)
+    ├── marketplace/    → stub
+    ├── business/       → stub
+    ├── ai/             → stub
+    ├── communication/  → stub
+    ├── analytics/      → stub
+    └── platform/       → parcial
 ```
 
-Cada módulo deverá preservar autonomia, baixo acoplamento e independência evolutiva.
+> **Nota:** `clinical/`, `patient/`, `nutrition/` e `appointment/` são módulos físicos dentro do **Care BC**, não Bounded Contexts independentes. Ver `master_bounded_contexts.md` §08.
+
+## Organização interna por módulo (padrão implementado)
+
+Cada módulo implementado segue Clean Architecture com Vertical Slice Architecture na camada de aplicação:
+
+```text
+modules/{nome}/
+├── {nome}.module.ts           → DI e registro (quando aplicável)
+├── composition/               → factory de handlers
+├── application/
+│   └── {verb}-{conceito}/     → vertical slice: command/query + handler + testes
+├── domain/
+│   ├── aggregates/
+│   ├── value-objects/
+│   ├── events/
+│   ├── policies/
+│   ├── repositories/          → interfaces
+│   └── errors/
+└── infrastructure/
+    ├── repositories/          → Prisma + in-memory
+    ├── adapters/              → directory ports (anti-corruption)
+    └── prisma/                → mappers
+```
+
+## CQRS e Vertical Slices (implementado)
+
+- **Commands** mutam estado, disparam eventos de domínio via `EventDispatcher`.
+- **Queries** leem via repositórios ou directory ports; sem dispatch de eventos.
+- Um folder por caso de uso: `{verb}-{aggregate}/` com `{name}.command.ts` ou `.query.ts`, `{name}.handler.ts`, `{name}.handler.test.ts`.
+- O módulo `clinical/` expõe **75 handlers** (41 commands + 33 queries) via `clinical.factory.ts`.
+- **ClinicalChart** (FEATURE-040) será implementado como compositor query-side — ver ADR-0019.
+
+## Rotas HTTP
+
+Módulos com rotas HTTP expostas: **IAM** (Person, Tenant, Membership, Role, Permission, Auth).
+
+O módulo `clinical/` possui `registerClinicalModule()` como stub — **casos de uso internos implementados, rotas HTTP clínicas não expostas**.
+
+Estrutura legada (v1.0 — substituída):
+
+```text
+src/modules/iam/, care/, marketplace/, business/, ai/, communication/, analytics/, platform/
+```
 
 ---
 

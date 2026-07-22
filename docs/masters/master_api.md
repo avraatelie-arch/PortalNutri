@@ -160,6 +160,24 @@ O versionamento da API será incluído diretamente no caminho da URL (ex: `/v1/`
 
 ---
 
+# 08. Estado de Exposição HTTP (Implementação)
+
+Este documento define padrões para APIs expostas. A tabela abaixo distingue **casos de uso implementados internamente** de **endpoints HTTP publicados**.
+
+| Módulo | Casos de uso (Application Layer) | Rotas HTTP expostas |
+|--------|----------------------------------|---------------------|
+| IAM | ✅ Implementados | ✅ Person, Tenant, Membership, Role, Permission, Auth |
+| Clinical | ✅ 75 handlers (41 commands + 33 queries) | ❌ **Não expostos** — `registerClinicalModule()` é stub |
+| Patient | ✅ Implementados | ❌ Não expostos |
+| Nutrition | ✅ Implementados | ❌ Não expostos |
+| Appointment | ✅ Implementados | ❌ Não expostos |
+
+**ClinicalChart** (FEATURE-040) será exposto como query-side quando implementado — conforme ADR-0019, sem commands HTTP de escrita para prontuário unificado.
+
+Documentar endpoints clínicos neste master **somente após** implementação e registro em `registerClinicalModule()`.
+
+---
+
 # Conclusão
 
 O presente documento estabelece as diretrizes obrigatórias de comunicação e exposição de APIs no PortalNutri.
